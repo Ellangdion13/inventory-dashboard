@@ -1,4 +1,6 @@
+// =========================
 // script.js
+// =========================
 
 let rawData = [];
 let filteredData = [];
@@ -48,35 +50,43 @@ function updateDashboard(){
 
 function updateKPI(){
 
-  document.getElementById("totalTransaction").innerText =
-    filteredData.length;
+  document.getElementById("totalTransaction")
+  .innerText =
+  filteredData.length.toLocaleString();
 
-  const totalQty = filteredData.reduce((sum,row)=>
-    sum + Number(row.Qty || 0)
-  ,0);
+  const totalQty = filteredData.reduce(
+    (sum,row)=>
+    sum + Number(row.Qty || 0),
+    0
+  );
 
-  document.getElementById("totalQty").innerText =
-    totalQty.toLocaleString();
+  document.getElementById("totalQty")
+  .innerText =
+  totalQty.toLocaleString();
 
   const unique = new Set(
     filteredData.map(d=>d["Kode Item"])
   );
 
-  document.getElementById("totalItem").innerText =
-    unique.size;
+  document.getElementById("totalItem")
+  .innerText =
+  unique.size;
 
-  const lowStock = filteredData.filter(d=>
-    Number(d["Actual Stock"]) <= 5
-  );
+  const lowStock =
+    filteredData.filter(d =>
+      Number(d["Actual Stock"]) <= 5
+    );
 
-  document.getElementById("lowStock").innerText =
-    lowStock.length;
+  document.getElementById("lowStock")
+  .innerText =
+  lowStock.length;
 
 }
 
 function renderCharts(){
 
-  Object.values(charts).forEach(chart => chart.destroy());
+  Object.values(charts)
+  .forEach(chart => chart.destroy());
 
   // TOP ITEM
 
@@ -87,35 +97,53 @@ function renderCharts(){
     const item = d["Kode Item"];
 
     itemMap[item] =
-      (itemMap[item] || 0)
-      + Number(d.Qty || 0);
+    (itemMap[item] || 0)
+    + Number(d.Qty || 0);
 
   });
 
-  const sortedItems = Object.entries(itemMap)
+  const sortedItems =
+    Object.entries(itemMap)
     .sort((a,b)=>b[1]-a[1])
     .slice(0,10);
 
   charts.top = new Chart(
+
     document.getElementById("topItemChart"),
+
     {
+
       type:'bar',
 
       data:{
+
         labels:sortedItems.map(i=>i[0]),
 
         datasets:[{
+
           data:sortedItems.map(i=>i[1]),
-          backgroundColor:'#00c2ff',
-          borderRadius:8
+
+          backgroundColor:[
+            '#00c2ff',
+            '#009dff',
+            '#0077ff',
+            '#5c6cff',
+            '#00ffe1'
+          ],
+
+          borderRadius:12
+
         }]
+
       },
 
       options:chartStyle()
+
     }
+
   );
 
-  // DAILY
+  // DAILY TREND
 
   const dailyMap = {};
 
@@ -124,27 +152,44 @@ function renderCharts(){
     const date = d.Tanggal;
 
     dailyMap[date] =
-      (dailyMap[date] || 0) + 1;
+    (dailyMap[date] || 0) + 1;
 
   });
 
   charts.daily = new Chart(
+
     document.getElementById("dailyTrendChart"),
+
     {
+
       type:'line',
 
       data:{
+
         labels:Object.keys(dailyMap),
 
         datasets:[{
+
           data:Object.values(dailyMap),
+
           borderColor:'#00c2ff',
-          tension:.4
+
+          backgroundColor:'rgba(0,194,255,.15)',
+
+          fill:true,
+
+          tension:.4,
+
+          pointRadius:4
+
         }]
+
       },
 
       options:chartStyle()
+
     }
+
   );
 
   // AREA
@@ -156,25 +201,42 @@ function renderCharts(){
     const area = d["Mesin/Area"];
 
     areaMap[area] =
-      (areaMap[area] || 0) + 1;
+    (areaMap[area] || 0) + 1;
 
   });
 
   charts.area = new Chart(
+
     document.getElementById("areaChart"),
+
     {
+
       type:'doughnut',
 
       data:{
+
         labels:Object.keys(areaMap),
 
         datasets:[{
-          data:Object.values(areaMap)
+
+          data:Object.values(areaMap),
+
+          backgroundColor:[
+            '#00c2ff',
+            '#0077ff',
+            '#5c6cff',
+            '#00ffe1',
+            '#ff9800'
+          ]
+
         }]
+
       },
 
       options:chartStyle()
+
     }
+
   );
 
   // REQUESTER
@@ -186,34 +248,49 @@ function renderCharts(){
     const req = d.Pemohon;
 
     reqMap[req] =
-      (reqMap[req] || 0) + 1;
+    (reqMap[req] || 0) + 1;
 
   });
 
-  const sortedReq = Object.entries(reqMap)
+  const sortedReq =
+    Object.entries(reqMap)
     .sort((a,b)=>b[1]-a[1])
     .slice(0,10);
 
   charts.req = new Chart(
+
     document.getElementById("requesterChart"),
+
     {
+
       type:'bar',
 
       data:{
+
         labels:sortedReq.map(i=>i[0]),
 
         datasets:[{
+
           data:sortedReq.map(i=>i[1]),
-          backgroundColor:'#1d4ed8',
-          borderRadius:8
+
+          backgroundColor:'#5c6cff',
+
+          borderRadius:10
+
         }]
+
       },
 
       options:{
+
         ...chartStyle(),
+
         indexAxis:'y'
+
       }
+
     }
+
   );
 
 }
@@ -224,32 +301,44 @@ function chartStyle(){
 
     responsive:true,
 
+    maintainAspectRatio:false,
+
     plugins:{
+
       legend:{
+
         labels:{
           color:'#93a4b7'
         }
+
       }
+
     },
 
     scales:{
 
       x:{
+
         ticks:{
           color:'#93a4b7'
         },
+
         grid:{
           color:'rgba(255,255,255,.04)'
         }
+
       },
 
       y:{
+
         ticks:{
           color:'#93a4b7'
         },
+
         grid:{
           color:'rgba(255,255,255,.04)'
         }
+
       }
 
     }
@@ -261,29 +350,39 @@ function chartStyle(){
 function renderTable(){
 
   const tbody =
-    document.getElementById("tableBody");
+  document.getElementById("tableBody");
 
   tbody.innerHTML = "";
 
   filteredData.forEach(row=>{
 
     const lowStock =
-      Number(row["Actual Stock"]) <= 5
-      ? 'low-stock'
-      : '';
+    Number(row["Actual Stock"]) <= 5
+    ? 'low-stock'
+    : '';
 
     tbody.innerHTML += `
+
       <tr>
+
         <td>${row.Tanggal || '-'}</td>
+
         <td>${row["Kode Item"] || '-'}</td>
+
         <td>${row.Deskripsi || '-'}</td>
+
         <td>${row.Qty || 0}</td>
+
         <td>${row["Mesin/Area"] || '-'}</td>
+
         <td>${row.Pemohon || '-'}</td>
+
         <td class="${lowStock}">
           ${row["Actual Stock"] || 0}
         </td>
+
       </tr>
+
     `;
 
   });
@@ -293,20 +392,20 @@ function renderTable(){
 function applyFilters(){
 
   const date =
-    document.getElementById("filterDate")
-    .value.toLowerCase();
+  document.getElementById("filterDate")
+  .value.toLowerCase();
 
   const item =
-    document.getElementById("filterItem")
-    .value.toLowerCase();
+  document.getElementById("filterItem")
+  .value.toLowerCase();
 
   const area =
-    document.getElementById("filterArea")
-    .value.toLowerCase();
+  document.getElementById("filterArea")
+  .value.toLowerCase();
 
   const requester =
-    document.getElementById("filterRequester")
-    .value.toLowerCase();
+  document.getElementById("filterRequester")
+  .value.toLowerCase();
 
   filteredData = rawData.filter(row => {
 
@@ -343,18 +442,19 @@ document
 .addEventListener("keyup",function(){
 
   const keyword =
-    this.value.toLowerCase();
+  this.value.toLowerCase();
 
   const rows =
-    document.querySelectorAll("#tableBody tr");
+  document.querySelectorAll("#tableBody tr");
 
   rows.forEach(row=>{
 
     row.style.display =
-      row.innerText.toLowerCase()
-      .includes(keyword)
-      ? ''
-      : 'none';
+    row.innerText
+    .toLowerCase()
+    .includes(keyword)
+    ? ''
+    : 'none';
 
   });
 
@@ -364,11 +464,13 @@ function updateClock(){
 
   const now = new Date();
 
-  document.getElementById("clock").innerText =
-    now.toLocaleTimeString();
+  document.getElementById("clock")
+  .innerText =
+  now.toLocaleTimeString();
 
-  document.getElementById("date").innerText =
-    now.toDateString();
+  document.getElementById("date")
+  .innerText =
+  now.toDateString();
 
 }
 
