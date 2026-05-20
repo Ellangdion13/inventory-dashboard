@@ -1,9 +1,10 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sparepart Inventory Monitoring System</title>
+  <title>Inventory Monitoring System</title>
 
   <!-- Google Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,249 +16,214 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Papa Parse -->
+  <!-- PapaParse -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
-  <!-- SheetJS -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
-  <!-- html2pdf -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<div class="loading-screen" id="loadingScreen">
-  <div class="loader"></div>
-  <p>Loading Industrial Dashboard...</p>
-</div>
+<div class="layout">
 
-<div class="dashboard">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
 
-  <!-- HEADER -->
-  <header class="header glass">
-    <div class="header-left">
-      <h1>
-        <i class="fa-solid fa-industry"></i>
-        SPAREPART INVENTORY MONITORING SYSTEM
-      </h1>
-      <p>Industrial Warehouse Analytics Dashboard</p>
+    <div class="logo">
+      <i class="fa-solid fa-industry"></i>
+      <span>IMS</span>
     </div>
 
-    <div class="header-right">
-      <div class="system-status">
-        <span class="status-dot"></span>
-        ONLINE SYSTEM
+    <nav>
+      <a class="active">
+        <i class="fa-solid fa-chart-line"></i>
+        Dashboard
+      </a>
+
+      <a>
+        <i class="fa-solid fa-boxes-stacked"></i>
+        Inventory
+      </a>
+
+      <a>
+        <i class="fa-solid fa-screwdriver-wrench"></i>
+        Maintenance
+      </a>
+
+      <a>
+        <i class="fa-solid fa-warehouse"></i>
+        Warehouse
+      </a>
+
+      <a>
+        <i class="fa-solid fa-gear"></i>
+        Settings
+      </a>
+    </nav>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+
+      <div>
+        <h1>Inventory Monitoring</h1>
+        <p>Sparepart Analytics & Warehouse Intelligence</p>
       </div>
 
-      <div class="clock-box">
-        <div id="date"></div>
-        <div id="clock"></div>
-      </div>
-    </div>
-  </header>
+      <div class="topbar-right">
 
-  <!-- FILTER -->
-  <section class="filters glass">
-    <div class="filter-group">
-      <label>Date</label>
+        <div class="status">
+          <span class="dot"></span>
+          ONLINE
+        </div>
+
+        <div class="clock-box">
+          <div id="date"></div>
+          <div id="clock"></div>
+        </div>
+
+      </div>
+
+    </header>
+
+    <!-- FILTER -->
+    <section class="filter-bar">
+
       <input type="date" id="filterDate">
-    </div>
 
-    <div class="filter-group">
-      <label>Item Code</label>
-      <input type="text" id="filterItem" placeholder="Search item">
-    </div>
+      <input type="text" id="filterItem" placeholder="Search Item">
 
-    <div class="filter-group">
-      <label>Area</label>
-      <input type="text" id="filterArea" placeholder="Search area">
-    </div>
+      <input type="text" id="filterArea" placeholder="Search Area">
 
-    <div class="filter-group">
-      <label>Requester</label>
-      <input type="text" id="filterRequester" placeholder="Search requester">
-    </div>
+      <input type="text" id="filterRequester" placeholder="Search Requester">
 
-    <div class="filter-buttons">
       <button onclick="applyFilters()">
-        <i class="fa fa-filter"></i> Apply
+        Apply Filter
       </button>
 
-      <button onclick="resetFilters()">
-        <i class="fa fa-rotate"></i> Reset
-      </button>
-    </div>
-  </section>
+    </section>
 
-  <!-- KPI -->
-  <section class="kpi-grid">
+    <!-- KPI -->
+    <section class="kpi-grid">
 
-    <div class="kpi-card glass">
-      <div class="kpi-icon blue"><i class="fa fa-box"></i></div>
-      <div>
-        <h3 id="totalTransaksi">0</h3>
-        <p>Total Transaksi</p>
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span>Total Transaction</span>
+          <i class="fa-solid fa-box"></i>
+        </div>
+
+        <h2 id="totalTransaction">0</h2>
       </div>
-    </div>
 
-    <div class="kpi-card glass">
-      <div class="kpi-icon cyan"><i class="fa fa-chart-line"></i></div>
-      <div>
-        <h3 id="totalQty">0</h3>
-        <p>Total Qty Keluar</p>
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span>Total Qty Out</span>
+          <i class="fa-solid fa-arrow-up"></i>
+        </div>
+
+        <h2 id="totalQty">0</h2>
       </div>
-    </div>
 
-    <div class="kpi-card glass">
-      <div class="kpi-icon purple"><i class="fa fa-layer-group"></i></div>
-      <div>
-        <h3 id="jenisItem">0</h3>
-        <p>Total Jenis Item</p>
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span>Total Item</span>
+          <i class="fa-solid fa-layer-group"></i>
+        </div>
+
+        <h2 id="totalItem">0</h2>
       </div>
-    </div>
 
-    <div class="kpi-card glass">
-      <div class="kpi-icon green"><i class="fa fa-calendar-day"></i></div>
-      <div>
-        <h3 id="todayTransaction">0</h3>
-        <p>Barang Keluar Hari Ini</p>
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span>Low Stock Alert</span>
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+
+        <h2 id="lowStock">0</h2>
       </div>
-    </div>
 
-    <div class="kpi-card glass">
-      <div class="kpi-icon orange"><i class="fa fa-arrow-up"></i></div>
-      <div>
-        <h3 id="todayQty">0</h3>
-        <p>Qty Keluar Hari Ini</p>
+    </section>
+
+    <!-- CHART -->
+    <section class="chart-grid">
+
+      <div class="card">
+        <div class="card-title">
+          TOP USED ITEM
+        </div>
+
+        <canvas id="topItemChart"></canvas>
       </div>
-    </div>
 
-    <div class="kpi-card glass">
-      <div class="kpi-icon cyan"><i class="fa fa-trophy"></i></div>
-      <div>
-        <h3 id="topItem">-</h3>
-        <p>Top Used Item</p>
+      <div class="card">
+        <div class="card-title">
+          DAILY TREND
+        </div>
+
+        <canvas id="dailyTrendChart"></canvas>
       </div>
-    </div>
 
-    <div class="kpi-card glass warning">
-      <div class="kpi-icon red"><i class="fa fa-triangle-exclamation"></i></div>
-      <div>
-        <h3 id="criticalPart">-</h3>
-        <p>Critical Part</p>
+      <div class="card">
+        <div class="card-title">
+          AREA DISTRIBUTION
+        </div>
+
+        <canvas id="areaChart"></canvas>
       </div>
-    </div>
 
-    <div class="kpi-card glass blink">
-      <div class="kpi-icon orange"><i class="fa fa-bell"></i></div>
-      <div>
-        <h3 id="lowStock">0</h3>
-        <p>Low Stock Alert</p>
+      <div class="card">
+        <div class="card-title">
+          TOP REQUESTER
+        </div>
+
+        <canvas id="requesterChart"></canvas>
       </div>
-    </div>
 
-  </section>
+    </section>
 
-  <!-- CHARTS -->
-  <section class="charts-grid">
+    <!-- TABLE -->
+    <section class="table-card">
 
-    <div class="chart-card glass">
-      <h3>TOP 10 BARANG PALING SERING KELUAR</h3>
-      <canvas id="topItemsChart"></canvas>
-    </div>
+      <div class="table-top">
 
-    <div class="chart-card glass">
-      <h3>TREND PENGELUARAN HARIAN</h3>
-      <canvas id="dailyTrendChart"></canvas>
-    </div>
+        <div>
+          <h3>Transaction Monitoring</h3>
+          <p>Realtime outgoing sparepart monitoring</p>
+        </div>
 
-    <div class="chart-card glass">
-      <h3>DISTRIBUSI AREA / MESIN</h3>
-      <canvas id="areaChart"></canvas>
-    </div>
+        <input type="text" id="searchInput" placeholder="Search data">
 
-    <div class="chart-card glass">
-      <h3>TOP REQUESTER</h3>
-      <canvas id="requesterChart"></canvas>
-    </div>
+      </div>
 
-    <div class="chart-card glass full-width">
-      <h3>PENGGUNAAN BERDASARKAN COST ALLOCATION</h3>
-      <canvas id="costChart"></canvas>
-    </div>
+      <div class="table-container">
 
-  </section>
+        <table>
 
-  <!-- ANALYSIS -->
-  <section class="analysis-grid">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Item Code</th>
+              <th>Description</th>
+              <th>Qty</th>
+              <th>Area</th>
+              <th>Requester</th>
+              <th>Stock</th>
+            </tr>
+          </thead>
 
-    <div class="analysis-card glass">
-      <h3>Inventory Analysis</h3>
+          <tbody id="tableBody"></tbody>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Kode Item</th>
-            <th>Total Qty</th>
-            <th>Kategori</th>
-            <th>Usage</th>
-          </tr>
-        </thead>
-        <tbody id="analysisTable"></tbody>
-      </table>
-    </div>
+        </table>
 
-    <div class="analysis-card glass">
-      <h3>Recent Activity</h3>
-      <div id="recentActivity" class="recent-activity"></div>
-    </div>
+      </div>
 
-  </section>
+    </section>
 
-  <!-- ACTION BUTTON -->
-  <section class="action-buttons">
-    <button onclick="exportPDF()">
-      <i class="fa fa-file-pdf"></i> Export PDF
-    </button>
-
-    <button onclick="exportExcel()">
-      <i class="fa fa-file-excel"></i> Export Excel
-    </button>
-
-    <button onclick="window.print()">
-      <i class="fa fa-print"></i> Print Dashboard
-    </button>
-  </section>
-
-  <!-- TABLE -->
-  <section class="table-section glass">
-    <div class="table-header">
-      <h3>Monitoring Transaction</h3>
-
-      <input type="text" id="searchInput" placeholder="Search data...">
-    </div>
-
-    <div class="table-container">
-      <table id="mainTable">
-        <thead>
-          <tr>
-            <th>Tanggal</th>
-            <th>Kode Item</th>
-            <th>Deskripsi</th>
-            <th>Qty</th>
-            <th>UOM</th>
-            <th>Mesin/Area</th>
-            <th>Pemohon</th>
-            <th>Actual Stock</th>
-          </tr>
-        </thead>
-
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
-  </section>
+  </main>
 
 </div>
 
