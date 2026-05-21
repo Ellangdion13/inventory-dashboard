@@ -33,8 +33,8 @@ const App = {
 };
 
 // ===================== CSV FILE PATHS =====================
-const CSV_OUTGOING = './data/OUTGOING.csv';
-const CSV_EXPENSE  = './data/OUTGOING EXPENSE.csv';
+const CSV_OUTGOING = './data/outgoing.csv';
+const CSV_EXPENSE  = './data/outgoingexpense.csv';
 
 // ===================== CHART.JS GLOBAL DEFAULTS =====================
 Chart.defaults.color = '#94a3b8';
