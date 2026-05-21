@@ -1,12 +1,8 @@
-<!-- ========================= -->
-<!-- index.html -->
-<!-- ========================= -->
-
 <!DOCTYPE html>
 <html lang="en">
-<head>
 
-  <meta charset="UTF-8"/>
+<head>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
   <title>Industrial Inventory Intelligence</title>
@@ -15,9 +11,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- ICON -->
+  <!-- FONT AWESOME -->
   <link rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
 
   <!-- CHART -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -26,7 +22,6 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
   <link rel="stylesheet" href="style.css"/>
-
 </head>
 
 <body>
@@ -34,11 +29,9 @@
 <div class="layout">
 
   <!-- SIDEBAR -->
-
   <aside class="sidebar">
 
     <div class="logo-box">
-
       <div class="logo-circle">
         <i class="fa-solid fa-industry"></i>
       </div>
@@ -47,7 +40,6 @@
         <h2>INDUSTRIAL IMS</h2>
         <p>Enterprise Monitoring</p>
       </div>
-
     </div>
 
     <div class="menu-title">
@@ -59,16 +51,6 @@
       <a class="active">
         <i class="fa-solid fa-chart-line"></i>
         Dashboard
-      </a>
-
-      <a>
-        <i class="fa-solid fa-boxes-stacked"></i>
-        Inventory
-      </a>
-
-      <a>
-        <i class="fa-solid fa-screwdriver-wrench"></i>
-        Maintenance
       </a>
 
       <a>
@@ -86,8 +68,14 @@
         Warehouse
       </a>
 
+      <a>
+        <i class="fa-solid fa-gear"></i>
+        Settings
+      </a>
+
     </nav>
 
+    <!-- SYSTEM STATUS -->
     <div class="system-card">
 
       <div class="system-title">
@@ -95,42 +83,30 @@
       </div>
 
       <div class="status-item">
-
         <span>
           <i class="fa-solid fa-circle"></i>
           Data Server
         </span>
 
-        <span class="online">
-          ONLINE
-        </span>
-
+        <span class="online">ONLINE</span>
       </div>
 
       <div class="status-item">
-
         <span>
           <i class="fa-solid fa-circle"></i>
           Warehouse
         </span>
 
-        <span class="online">
-          ACTIVE
-        </span>
-
+        <span class="online">ACTIVE</span>
       </div>
 
       <div class="status-item">
-
         <span>
           <i class="fa-solid fa-circle"></i>
           Monitoring
         </span>
 
-        <span class="online">
-          RUNNING
-        </span>
-
+        <span class="online">RUNNING</span>
       </div>
 
     </div>
@@ -138,15 +114,12 @@
   </aside>
 
   <!-- MAIN -->
-
   <main class="main">
 
     <!-- TOPBAR -->
-
     <header class="topbar">
 
       <div>
-
         <div class="page-title">
           SPAREPART INVENTORY INTELLIGENCE
         </div>
@@ -154,24 +127,23 @@
         <div class="page-subtitle">
           Industrial Sparepart Monitoring & Analytics System
         </div>
-
       </div>
 
       <div class="top-right">
 
         <div class="live-box">
-
           <div class="live-dot"></div>
-
           LIVE SYSTEM
+        </div>
 
+        <div class="status">
+          <span class="dot"></span>
+          ONLINE
         </div>
 
         <div class="clock-box">
-
           <div id="date"></div>
           <div id="clock"></div>
-
         </div>
 
       </div>
@@ -179,7 +151,6 @@
     </header>
 
     <!-- FILTER -->
-
     <section class="filter-panel">
 
       <div class="filter-item">
@@ -210,21 +181,14 @@
     </section>
 
     <!-- KPI -->
-
     <section class="kpi-grid">
 
       <div class="kpi-card">
-
         <div class="kpi-top">
 
           <div>
-
-            <div class="kpi-title">
-              TOTAL TRANSACTION
-            </div>
-
+            <div class="kpi-title">TOTAL TRANSACTION</div>
             <h2 id="totalTransaction">0</h2>
-
           </div>
 
           <div class="kpi-icon blue">
@@ -237,21 +201,14 @@
           <i class="fa-solid fa-arrow-trend-up"></i>
           Realtime Inventory Activity
         </div>
-
       </div>
 
       <div class="kpi-card">
-
         <div class="kpi-top">
 
           <div>
-
-            <div class="kpi-title">
-              TOTAL QTY OUT
-            </div>
-
+            <div class="kpi-title">TOTAL QTY OUT</div>
             <h2 id="totalQty">0</h2>
-
           </div>
 
           <div class="kpi-icon cyan">
@@ -264,21 +221,14 @@
           <i class="fa-solid fa-wave-square"></i>
           Sparepart Consumption
         </div>
-
       </div>
 
       <div class="kpi-card">
-
         <div class="kpi-top">
 
           <div>
-
-            <div class="kpi-title">
-              TOTAL ITEM
-            </div>
-
+            <div class="kpi-title">TOTAL ITEM</div>
             <h2 id="totalItem">0</h2>
-
           </div>
 
           <div class="kpi-icon purple">
@@ -291,21 +241,14 @@
           <i class="fa-solid fa-database"></i>
           Inventory Master Data
         </div>
-
       </div>
 
       <div class="kpi-card warning">
-
         <div class="kpi-top">
 
           <div>
-
-            <div class="kpi-title">
-              LOW STOCK ALERT
-            </div>
-
+            <div class="kpi-title">LOW STOCK ALERT</div>
             <h2 id="lowStock">0</h2>
-
           </div>
 
           <div class="kpi-icon orange">
@@ -318,125 +261,98 @@
           <i class="fa-solid fa-bell"></i>
           Critical Monitoring Alert
         </div>
-
       </div>
 
     </section>
 
     <!-- CHART -->
-
     <section class="analytics-grid">
 
       <div class="chart-card large">
-
         <div class="card-header">
-
           <div>
             <h3>TOP USED ITEM</h3>
             <p>Most requested sparepart usage</p>
           </div>
 
           <i class="fa-solid fa-chart-column"></i>
-
         </div>
 
         <canvas id="topItemChart"></canvas>
-
       </div>
 
       <div class="chart-card">
-
         <div class="card-header">
-
           <div>
             <h3>AREA DISTRIBUTION</h3>
             <p>Usage by machine area</p>
           </div>
 
           <i class="fa-solid fa-chart-pie"></i>
-
         </div>
 
         <canvas id="areaChart"></canvas>
-
       </div>
 
       <div class="chart-card">
-
         <div class="card-header">
-
           <div>
             <h3>TOP REQUESTER</h3>
             <p>Most active requester</p>
           </div>
 
           <i class="fa-solid fa-users"></i>
-
         </div>
 
         <canvas id="requesterChart"></canvas>
-
       </div>
 
       <div class="chart-card full">
-
         <div class="card-header">
-
           <div>
             <h3>DAILY TRANSACTION TREND</h3>
             <p>Realtime outgoing activity</p>
           </div>
 
           <i class="fa-solid fa-chart-line"></i>
-
         </div>
 
         <canvas id="dailyTrendChart"></canvas>
-
       </div>
 
     </section>
 
     <!-- TABLE -->
-
     <section class="table-card">
 
       <div class="table-header">
 
         <div>
-
           <h3>TRANSACTION MONITORING</h3>
-
-          <p>
-            Integrated warehouse outgoing monitoring system
-          </p>
-
+          <p>Integrated warehouse outgoing monitoring system</p>
         </div>
 
         <div class="table-tools">
 
           <div class="search-box">
-
             <i class="fa-solid fa-magnifying-glass"></i>
 
-            <input type="text"
-            id="searchInput"
-            placeholder="Search data">
-
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search data">
           </div>
 
         </div>
 
       </div>
 
-      <div class="table-container">
+      <div class="table-wrapper">
 
         <table>
 
           <thead>
-
             <tr>
-
               <th>Date</th>
               <th>Item Code</th>
               <th>Description</th>
@@ -444,9 +360,7 @@
               <th>Area</th>
               <th>Requester</th>
               <th>Stock</th>
-
             </tr>
-
           </thead>
 
           <tbody id="tableBody"></tbody>
