@@ -195,13 +195,39 @@ async function loadAllData() {
 /** Load a single CSV file using PapaParse */
 function loadCSV(path) {
   return new Promise((resolve) => {
+
     Papa.parse(path, {
       download: true,
       header: true,
       skipEmptyLines: true,
-      trimHeaders: true,
-      complete: (results) => resolve(results.data || []),
-      error: () => resolve([]),
+      delimiter: ";",
+
+      complete: (results) => {
+
+        const rows = (results.data || []).map(row => ({
+          date: row['Tanggal Pengambilan'] || '',
+          item_code: row['Kode Item'] || '',
+          item_name: row['Deskripsi'] || '',
+          machine: row['Mesin (Area)'] || '',
+          qty: row['Qty'] || 0,
+          requester: row['Pemohon'] || '',
+          stock: row['QTY\nActual Stock'] || 0,
+          cost_allocation: row['Cost Alocation'] || '',
+        }));
+
+        console.log(rows);
+
+        resolve(rows);
+      },
+
+      error: (err) => {
+        console.error('CSV Error:', err);
+        resolve([]);
+      }
+    });
+
+  });
+}
     });
   });
 }
