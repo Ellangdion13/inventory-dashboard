@@ -1,381 +1,623 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-  <title>Industrial Inventory Intelligence</title>
-
-  <!-- FONT -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- FONT AWESOME -->
-  <link rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
-
-  <!-- CHART -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- CSV -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
-  <link rel="stylesheet" href="style.css"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BT-KCH Inventory Monitoring Dashboard</title>
+  <!-- ===================== EXTERNAL LIBRARIES ===================== -->
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css)" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css)" />
+  <!-- Google Fonts -->
+  <link href="[fonts.googleapis.com](https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap)" rel="stylesheet" />
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
-
-<div class="layout">
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-
-    <div class="logo-box">
-      <div class="logo-circle">
-        <i class="fa-solid fa-industry"></i>
-      </div>
-
-      <div>
-        <h2>INDUSTRIAL IMS</h2>
-        <p>Enterprise Monitoring</p>
-      </div>
+<!-- ===================== LOADING SCREEN ===================== -->
+<div id="loadingScreen" class="loading-screen">
+  <div class="loading-content">
+    <div class="loading-logo">
+      <div class="logo-ring"></div>
+      <div class="logo-ring ring-2"></div>
+      <div class="logo-ring ring-3"></div>
+      <div class="logo-icon"><i class="bi bi-box-seam-fill"></i></div>
     </div>
-
-    <div class="menu-title">
-      MAIN MENU
+    <div class="loading-text">Bintang Toedjoe</div>
+    <div class="loading-sub">Kalbe Consumer Health</div>
+    <div class="loading-bar-wrap">
+      <div class="loading-bar" id="loadingBar"></div>
     </div>
-
-    <nav>
-
-      <a class="active">
-        <i class="fa-solid fa-chart-line"></i>
-        Dashboard
-      </a>
-
-      <a>
-        <i class="fa-solid fa-gears"></i>
-        Machine
-      </a>
-
-      <a>
-        <i class="fa-solid fa-chart-pie"></i>
-        Analytics
-      </a>
-
-      <a>
-        <i class="fa-solid fa-warehouse"></i>
-        Warehouse
-      </a>
-
-      <a>
-        <i class="fa-solid fa-gear"></i>
-        Settings
-      </a>
-
-    </nav>
-
-    <!-- SYSTEM STATUS -->
-    <div class="system-card">
-
-      <div class="system-title">
-        SYSTEM STATUS
-      </div>
-
-      <div class="status-item">
-        <span>
-          <i class="fa-solid fa-circle"></i>
-          Data Server
-        </span>
-
-        <span class="online">ONLINE</span>
-      </div>
-
-      <div class="status-item">
-        <span>
-          <i class="fa-solid fa-circle"></i>
-          Warehouse
-        </span>
-
-        <span class="online">ACTIVE</span>
-      </div>
-
-      <div class="status-item">
-        <span>
-          <i class="fa-solid fa-circle"></i>
-          Monitoring
-        </span>
-
-        <span class="online">RUNNING</span>
-      </div>
-
-    </div>
-
-  </aside>
-
-  <!-- MAIN -->
-  <main class="main">
-
-    <!-- TOPBAR -->
-    <header class="topbar">
-
-      <div>
-        <div class="page-title">
-          SPAREPART INVENTORY INTELLIGENCE
-        </div>
-
-        <div class="page-subtitle">
-          Industrial Sparepart Monitoring & Analytics System
-        </div>
-      </div>
-
-      <div class="top-right">
-
-        <div class="live-box">
-          <div class="live-dot"></div>
-          LIVE SYSTEM
-        </div>
-
-        <div class="status">
-          <span class="dot"></span>
-          ONLINE
-        </div>
-
-        <div class="clock-box">
-          <div id="date"></div>
-          <div id="clock"></div>
-        </div>
-
-      </div>
-
-    </header>
-
-    <!-- FILTER -->
-    <section class="filter-panel">
-
-      <div class="filter-item">
-        <label>Date</label>
-        <input type="date" id="filterDate">
-      </div>
-
-      <div class="filter-item">
-        <label>Item</label>
-        <input type="text" id="filterItem" placeholder="Search Item">
-      </div>
-
-      <div class="filter-item">
-        <label>Area</label>
-        <input type="text" id="filterArea" placeholder="Search Area">
-      </div>
-
-      <div class="filter-item">
-        <label>Requester</label>
-        <input type="text" id="filterRequester" placeholder="Search Requester">
-      </div>
-
-      <button onclick="applyFilters()">
-        <i class="fa-solid fa-filter"></i>
-        Apply Filter
-      </button>
-
-    </section>
-
-    <!-- KPI -->
-    <section class="kpi-grid">
-
-      <div class="kpi-card">
-        <div class="kpi-top">
-
-          <div>
-            <div class="kpi-title">TOTAL TRANSACTION</div>
-            <h2 id="totalTransaction">0</h2>
-          </div>
-
-          <div class="kpi-icon blue">
-            <i class="fa-solid fa-box"></i>
-          </div>
-
-        </div>
-
-        <div class="kpi-bottom">
-          <i class="fa-solid fa-arrow-trend-up"></i>
-          Realtime Inventory Activity
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-top">
-
-          <div>
-            <div class="kpi-title">TOTAL QTY OUT</div>
-            <h2 id="totalQty">0</h2>
-          </div>
-
-          <div class="kpi-icon cyan">
-            <i class="fa-solid fa-arrow-up"></i>
-          </div>
-
-        </div>
-
-        <div class="kpi-bottom">
-          <i class="fa-solid fa-wave-square"></i>
-          Sparepart Consumption
-        </div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-top">
-
-          <div>
-            <div class="kpi-title">TOTAL ITEM</div>
-            <h2 id="totalItem">0</h2>
-          </div>
-
-          <div class="kpi-icon purple">
-            <i class="fa-solid fa-layer-group"></i>
-          </div>
-
-        </div>
-
-        <div class="kpi-bottom">
-          <i class="fa-solid fa-database"></i>
-          Inventory Master Data
-        </div>
-      </div>
-
-      <div class="kpi-card warning">
-        <div class="kpi-top">
-
-          <div>
-            <div class="kpi-title">LOW STOCK ALERT</div>
-            <h2 id="lowStock">0</h2>
-          </div>
-
-          <div class="kpi-icon orange">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-          </div>
-
-        </div>
-
-        <div class="kpi-bottom">
-          <i class="fa-solid fa-bell"></i>
-          Critical Monitoring Alert
-        </div>
-      </div>
-
-    </section>
-
-    <!-- CHART -->
-    <section class="analytics-grid">
-
-      <div class="chart-card large">
-        <div class="card-header">
-          <div>
-            <h3>TOP USED ITEM</h3>
-            <p>Most requested sparepart usage</p>
-          </div>
-
-          <i class="fa-solid fa-chart-column"></i>
-        </div>
-
-        <canvas id="topItemChart"></canvas>
-      </div>
-
-      <div class="chart-card">
-        <div class="card-header">
-          <div>
-            <h3>AREA DISTRIBUTION</h3>
-            <p>Usage by machine area</p>
-          </div>
-
-          <i class="fa-solid fa-chart-pie"></i>
-        </div>
-
-        <canvas id="areaChart"></canvas>
-      </div>
-
-      <div class="chart-card">
-        <div class="card-header">
-          <div>
-            <h3>TOP REQUESTER</h3>
-            <p>Most active requester</p>
-          </div>
-
-          <i class="fa-solid fa-users"></i>
-        </div>
-
-        <canvas id="requesterChart"></canvas>
-      </div>
-
-      <div class="chart-card full">
-        <div class="card-header">
-          <div>
-            <h3>DAILY TRANSACTION TREND</h3>
-            <p>Realtime outgoing activity</p>
-          </div>
-
-          <i class="fa-solid fa-chart-line"></i>
-        </div>
-
-        <canvas id="dailyTrendChart"></canvas>
-      </div>
-
-    </section>
-
-    <!-- TABLE -->
-    <section class="table-card">
-
-      <div class="table-header">
-
-        <div>
-          <h3>TRANSACTION MONITORING</h3>
-          <p>Integrated warehouse outgoing monitoring system</p>
-        </div>
-
-        <div class="table-tools">
-
-          <div class="search-box">
-            <i class="fa-solid fa-magnifying-glass"></i>
-
-            <input
-              type="text"
-              id="searchInput"
-              placeholder="Search data">
-          </div>
-
-        </div>
-
-      </div>
-
-      <div class="table-wrapper">
-
-        <table>
-
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Item Code</th>
-              <th>Description</th>
-              <th>Qty</th>
-              <th>Area</th>
-              <th>Requester</th>
-              <th>Stock</th>
-            </tr>
-          </thead>
-
-          <tbody id="tableBody"></tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-  </main>
-
+    <div class="loading-status" id="loadingStatus">Initializing system...</div>
+  </div>
 </div>
-
+<!-- ===================== MAIN APP WRAPPER ===================== -->
+<div id="appWrapper" class="app-wrapper" style="display:none;">
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar" id="sidebar">
+    <!-- Sidebar Header / Logo -->
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">
+          <img src="assets/logo.png" alt="Logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+          <div class="logo-fallback" style="display:none;"><i class="bi bi-box-seam-fill"></i></div>
+        </div>
+        <div class="sidebar-logo-text">
+          <span class="logo-main">BT-KCH</span>
+          <span class="logo-sub">Inventory</span>
+        </div>
+      </div>
+      <button class="sidebar-toggle-btn" id="sidebarToggle" title="Toggle Sidebar">
+        <i class="bi bi-layout-sidebar-reverse"></i>
+      </button>
+    </div>
+    <!-- Sidebar Navigation Menu -->
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">MAIN MENU</div>
+      <a href="#" class="nav-item active" data-page="dashboard">
+        <div class="nav-icon"><i class="bi bi-speedometer2"></i></div>
+        <span class="nav-label">Dashboard</span>
+        <div class="nav-indicator"></div>
+      </a>
+      <a href="#" class="nav-item" data-page="machine">
+        <div class="nav-icon"><i class="bi bi-gear-wide-connected"></i></div>
+        <span class="nav-label">Machine</span>
+        <div class="nav-indicator"></div>
+      </a>
+      <a href="#" class="nav-item" data-page="analytic">
+        <div class="nav-icon"><i class="bi bi-bar-chart-line-fill"></i></div>
+        <span class="nav-label">Analytic</span>
+        <div class="nav-badge" id="analyticBadge">NEW</div>
+        <div class="nav-indicator"></div>
+      </a>
+      <a href="#" class="nav-item" data-page="transaction">
+        <div class="nav-icon"><i class="bi bi-table"></i></div>
+        <span class="nav-label">Transaction</span>
+        <div class="nav-indicator"></div>
+      </a>
+      <div class="nav-section-label">SYSTEM</div>
+      <a href="#" class="nav-item" data-page="setting">
+        <div class="nav-icon"><i class="bi bi-sliders2"></i></div>
+        <span class="nav-label">Setting</span>
+        <div class="nav-indicator"></div>
+      </a>
+    </nav>
+    <!-- Sidebar Footer -->
+    <div class="sidebar-footer">
+      <div class="system-status">
+        <div class="status-dot pulse-green"></div>
+        <span>System Online</span>
+      </div>
+      <div class="sidebar-version">v2.1.0</div>
+    </div>
+  </aside>
+  <!-- ===================== MAIN CONTENT AREA ===================== -->
+  <div class="main-area" id="mainArea">
+    <!-- ===================== TOP NAVBAR ===================== -->
+    <header class="topnav">
+      <!-- Left: Hamburger + Page Title -->
+      <div class="topnav-left">
+        <button class="topnav-menu-btn" id="mobileMenuBtn">
+          <i class="bi bi-list"></i>
+        </button>
+        <div class="topnav-breadcrumb">
+          <span class="breadcrumb-icon"><i class="bi bi-speedometer2"></i></span>
+          <span class="breadcrumb-title" id="pageTitle">Dashboard Overview</span>
+        </div>
+      </div>
+      <!-- Center: Company Title -->
+      <div class="topnav-center">
+        <div class="company-title">
+          <span class="company-name">Bintang Toedjoe</span>
+          <span class="company-divider">|</span>
+          <span class="company-sub">Kalbe Consumer Health Inventory Monitoring</span>
+        </div>
+      </div>
+      <!-- Right: Clock, Status, Profile -->
+      <div class="topnav-right">
+        <!-- Real-time Clock -->
+        <div class="realtime-clock">
+          <div class="clock-time" id="clockTime">00:00:00</div>
+          <div class="clock-date" id="clockDate">Rabu, 21 Mei 2026</div>
+        </div>
+        <!-- Online Indicator -->
+        <div class="online-badge">
+          <div class="online-dot"></div>
+          <span>ONLINE</span>
+        </div>
+        <!-- Refresh Indicator -->
+        <div class="refresh-indicator" id="refreshIndicator" title="Auto refresh aktif">
+          <i class="bi bi-arrow-repeat" id="refreshIcon"></i>
+          <span class="refresh-label">Auto</span>
+        </div>
+        <!-- Dark Mode Toggle -->
+        <button class="darkmode-btn" id="darkmodeBtn" title="Toggle Dark Mode">
+          <i class="bi bi-moon-stars-fill" id="darkmodeIcon"></i>
+        </button>
+        <!-- User Profile -->
+        <div class="user-profile">
+          <div class="user-avatar">
+            <i class="bi bi-person-fill"></i>
+          </div>
+          <div class="user-info">
+            <span class="user-name">Admin User</span>
+            <span class="user-role">Inventory Manager</span>
+          </div>
+        </div>
+      </div>
+    </header>
+    <!-- ===================== PAGE CONTENT ===================== -->
+    <main class="page-content" id="pageContent">
+      <!-- ========== PAGE: DASHBOARD ========== -->
+      <div class="page" id="page-dashboard">
+        <!-- Date Filter Bar -->
+        <div class="filter-bar glass-card">
+          <div class="filter-left">
+            <i class="bi bi-funnel-fill filter-icon"></i>
+            <span class="filter-title">Filter Data</span>
+          </div>
+          <div class="filter-controls">
+            <div class="filter-group">
+              <label>Dari Tanggal</label>
+              <input type="date" id="filterDateFrom" class="filter-input" />
+            </div>
+            <div class="filter-group">
+              <label>Sampai Tanggal</label>
+              <input type="date" id="filterDateTo" class="filter-input" />
+            </div>
+            <div class="filter-group">
+              <label>Range Cepat</label>
+              <div class="quick-filter-btns">
+                <button class="qbtn" data-range="today">Hari Ini</button>
+                <button class="qbtn" data-range="week">Minggu Ini</button>
+                <button class="qbtn" data-range="month">Bulan Ini</button>
+                <button class="qbtn active" data-range="all">Semua</button>
+              </div>
+            </div>
+            <button class="btn-apply-filter" id="applyFilter">
+              <i class="bi bi-search"></i> Terapkan
+            </button>
+            <button class="btn-reset-filter" id="resetFilter">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+          </div>
+        </div>
+        <!-- KPI Cards Row -->
+        <div class="kpi-grid" id="kpiGrid">
+          <!-- Card 1: Total Outgoing Data -->
+          <div class="kpi-card" data-color="blue">
+            <div class="kpi-icon-wrap">
+              <i class="bi bi-arrow-up-right-circle-fill"></i>
+            </div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpiTotalData">--</div>
+              <div class="kpi-label">Total Data Outgoing</div>
+              <div class="kpi-sub">Records keseluruhan</div>
+            </div>
+            <div class="kpi-sparkline"></div>
+          </div>
+          <!-- Card 2: Total Qty Keluar -->
+          <div class="kpi-card" data-color="green">
+            <div class="kpi-icon-wrap">
+              <i class="bi bi-boxes"></i>
+            </div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpiTotalQty">--</div>
+              <div class="kpi-label">Total Qty Keluar</div>
+              <div class="kpi-sub">Unit keseluruhan</div>
+            </div>
+            <div class="kpi-sparkline"></div>
+          </div>
+          <!-- Card 3: Qty Keluar Hari Ini -->
+          <div class="kpi-card" data-color="cyan">
+            <div class="kpi-icon-wrap">
+              <i class="bi bi-calendar-check-fill"></i>
+            </div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpiTodayQty">--</div>
+              <div class="kpi-label">Qty Keluar Hari Ini</div>
+              <div class="kpi-sub" id="kpiTodayDate">--</div>
+            </div>
+            <div class="kpi-sparkline"></div>
+          </div>
+          <!-- Card 4: Transaksi Hari Ini -->
+          <div class="kpi-card" data-color="purple">
+            <div class="kpi-icon-wrap">
+              <i class="bi bi-receipt-cutoff"></i>
+            </div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpiTodayTrx">--</div>
+              <div class="kpi-label">Transaksi Hari Ini</div>
+              <div class="kpi-sub">Jumlah transaksi</div>
+            </div>
+            <div class="kpi-sparkline"></div>
+          </div>
+          <!-- Card 5: Total Mesin Aktif -->
+          <div class="kpi-card" data-color="orange">
+            <div class="kpi-icon-wrap">
+              <i class="bi bi-cpu-fill"></i>
+            </div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpiActiveMachine">--</div>
+              <div class="kpi-label">Mesin Aktif</div>
+              <div class="kpi-sub">Unit terdaftar</div>
+            </div>
+            <div class="kpi-sparkline"></div>
+          </div>
+          <!-- Card 6: Total Requester Aktif -->
+          <div class="kpi-card" data-color="red">
+            <div class="kpi-icon-wrap">
+              <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="kpi-body">
+              <div class="kpi-value" id="kpiActiveRequester">--</div>
+              <div class="kpi-label">Requester Aktif</div>
+              <div class="kpi-sub">Personel terdaftar</div>
+            </div>
+            <div class="kpi-sparkline"></div>
+          </div>
+        </div>
+        <!-- Charts Row 1 -->
+        <div class="chart-row">
+          <!-- Trend Chart -->
+          <div class="chart-card glass-card chart-wide">
+            <div class="chart-header">
+              <div class="chart-title">
+                <i class="bi bi-graph-up-arrow"></i>
+                Trend Penggunaan Harian
+              </div>
+              <div class="chart-badge">7 Hari Terakhir</div>
+            </div>
+            <div class="chart-body">
+              <canvas id="trendChart" height="120"></canvas>
+            </div>
+          </div>
+          <!-- Machine Donut -->
+          <div class="chart-card glass-card chart-narrow">
+            <div class="chart-header">
+              <div class="chart-title">
+                <i class="bi bi-pie-chart-fill"></i>
+                Distribusi Mesin
+              </div>
+              <div class="chart-badge">Overview</div>
+            </div>
+            <div class="chart-body">
+              <canvas id="machineDonutChart" height="220"></canvas>
+            </div>
+          </div>
+        </div>
+        <!-- Low Stock Alert + Recent Transactions -->
+        <div class="bottom-row">
+          <!-- Low Stock Alert -->
+          <div class="glass-card low-stock-card">
+            <div class="section-header">
+              <div class="section-title">
+                <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                Low Stock Alert
+              </div>
+              <span class="badge-count" id="lowStockCount">0</span>
+            </div>
+            <div class="low-stock-list" id="lowStockList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+          <!-- Recent Transactions -->
+          <div class="glass-card recent-trx-card">
+            <div class="section-header">
+              <div class="section-title">
+                <i class="bi bi-clock-history"></i>
+                Transaksi Terbaru
+              </div>
+              <a href="#" class="view-all-link" data-page="transaction">Lihat Semua <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="recent-trx-list" id="recentTrxList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- END PAGE: DASHBOARD -->
+      <!-- ========== PAGE: MACHINE ========== -->
+      <div class="page hidden" id="page-machine">
+        <div class="page-header-block">
+          <h2 class="page-h2"><i class="bi bi-gear-wide-connected"></i> Machine Distribution</h2>
+          <p class="page-desc">Monitoring distribusi penggunaan sparepart per mesin</p>
+        </div>
+        <!-- Machine KPI Row -->
+        <div class="machine-kpi-row" id="machineKpiRow">
+          <!-- Dynamically populated -->
+        </div>
+        <!-- Machine Charts -->
+        <div class="chart-row">
+          <div class="chart-card glass-card chart-wide">
+            <div class="chart-header">
+              <div class="chart-title"><i class="bi bi-bar-chart-fill"></i> Qty per Mesin</div>
+            </div>
+            <div class="chart-body">
+              <canvas id="machineBarChart" height="150"></canvas>
+            </div>
+          </div>
+          <div class="chart-card glass-card chart-narrow">
+            <div class="chart-header">
+              <div class="chart-title"><i class="bi bi-activity"></i> Frekuensi Kerusakan</div>
+            </div>
+            <div class="chart-body">
+              <canvas id="machineBreakdownChart" height="220"></canvas>
+            </div>
+          </div>
+        </div>
+        <!-- Machine Ranking Table -->
+        <div class="glass-card mt-4">
+          <div class="section-header">
+            <div class="section-title"><i class="bi bi-trophy-fill"></i> Ranking Mesin</div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table" id="machineRankingTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Machine</th>
+                  <th>Total Transaksi</th>
+                  <th>Total Qty</th>
+                  <th>Item Berbeda</th>
+                  <th>Indikasi Kerusakan</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="machineRankingBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Machine Trend -->
+        <div class="glass-card mt-4">
+          <div class="section-header">
+            <div class="section-title"><i class="bi bi-graph-up"></i> Trend Penggunaan Mesin (7 Hari)</div>
+          </div>
+          <div class="chart-body">
+            <canvas id="machineTrendChart" height="130"></canvas>
+          </div>
+        </div>
+      </div>
+      <!-- END PAGE: MACHINE -->
+      <!-- ========== PAGE: ANALYTIC ========== -->
+      <div class="page hidden" id="page-analytic">
+        <div class="page-header-block">
+          <h2 class="page-h2"><i class="bi bi-bar-chart-line-fill"></i> Analytic</h2>
+          <p class="page-desc">Analisis mendalam data inventory outgoing</p>
+        </div>
+        <!-- Top 10 Items -->
+        <div class="chart-row">
+          <div class="chart-card glass-card" style="flex:1.5">
+            <div class="chart-header">
+              <div class="chart-title"><i class="bi bi-trophy-fill"></i> Top 10 Barang Paling Sering Keluar</div>
+            </div>
+            <div class="chart-body">
+              <canvas id="top10Chart" height="160"></canvas>
+            </div>
+          </div>
+          <div class="chart-card glass-card" style="flex:1">
+            <div class="chart-header">
+              <div class="chart-title"><i class="bi bi-people-fill"></i> Top Requester</div>
+            </div>
+            <div class="chart-body">
+              <canvas id="requesterChart" height="220"></canvas>
+            </div>
+          </div>
+        </div>
+        <!-- Cost Allocation & Trend -->
+        <div class="chart-row mt-4">
+          <div class="chart-card glass-card" style="flex:1">
+            <div class="chart-header">
+              <div class="chart-title"><i class="bi bi-currency-dollar"></i> Cost Allocation Distribution</div>
+            </div>
+            <div class="chart-body">
+              <canvas id="costAllocChart" height="220"></canvas>
+            </div>
+          </div>
+          <div class="chart-card glass-card" style="flex:1.5">
+            <div class="chart-header">
+              <div class="chart-title"><i class="bi bi-graph-up-arrow"></i> Trend Penggunaan Item (7 Hari)</div>
+            </div>
+            <div class="chart-body">
+              <canvas id="itemTrendChart" height="160"></canvas>
+            </div>
+          </div>
+        </div>
+        <!-- Machine Breakdown -->
+        <div class="glass-card mt-4">
+          <div class="chart-header">
+            <div class="chart-title"><i class="bi bi-exclamation-diamond-fill text-warning"></i> Indikasi Mesin Sering Mengalami Kerusakan</div>
+          </div>
+          <div class="chart-body">
+            <canvas id="machineBreakdownAnalytic" height="100"></canvas>
+          </div>
+        </div>
+        <!-- Sparepart per Machine -->
+        <div class="glass-card mt-4">
+          <div class="section-header">
+            <div class="section-title"><i class="bi bi-wrench-adjustable"></i> Sparepart Paling Sering per Mesin</div>
+          </div>
+          <div id="sparepartPerMachine">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+      <!-- END PAGE: ANALYTIC -->
+      <!-- ========== PAGE: TRANSACTION MONITORING ========== -->
+      <div class="page hidden" id="page-transaction">
+        <div class="page-header-block">
+          <h2 class="page-h2"><i class="bi bi-table"></i> Transaction Monitoring</h2>
+          <p class="page-desc">Monitoring seluruh transaksi outgoing inventory secara realtime</p>
+        </div>
+        <!-- Table Controls -->
+        <div class="table-controls glass-card">
+          <div class="tc-left">
+            <div class="search-wrap">
+              <i class="bi bi-search search-ico"></i>
+              <input type="text" id="trxSearch" placeholder="Cari item, requester, mesin..." class="search-input" />
+            </div>
+            <select id="trxFilterMachine" class="filter-select">
+              <option value="">Semua Mesin</option>
+            </select>
+            <select id="trxFilterRequester" class="filter-select">
+              <option value="">Semua Requester</option>
+            </select>
+          </div>
+          <div class="tc-right">
+            <button class="btn-export" id="exportExcel">
+              <i class="bi bi-file-earmark-excel-fill"></i> Export Excel
+            </button>
+            <span class="row-count" id="trxRowCount">0 data</span>
+          </div>
+        </div>
+        <!-- Transaction Table -->
+        <div class="glass-card mt-3">
+          <div class="table-responsive">
+            <table class="data-table sortable-table" id="trxTable">
+              <thead>
+                <tr>
+                  <th class="sortable" data-col="date">Tanggal <i class="bi bi-chevron-expand"></i></th>
+                  <th class="sortable" data-col="item_code">Kode Item <i class="bi bi-chevron-expand"></i></th>
+                  <th class="sortable" data-col="item_name">Nama Item <i class="bi bi-chevron-expand"></i></th>
+                  <th class="sortable" data-col="qty">Qty <i class="bi bi-chevron-expand"></i></th>
+                  <th class="sortable" data-col="requester">Requester <i class="bi bi-chevron-expand"></i></th>
+                  <th class="sortable" data-col="machine">Machine <i class="bi bi-chevron-expand"></i></th>
+                  <th class="sortable" data-col="cost_allocation">Cost Alloc <i class="bi bi-chevron-expand"></i></th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="trxTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination -->
+          <div class="pagination-wrap">
+            <div class="pagination-info" id="paginationInfo">Menampilkan 0-0 dari 0</div>
+            <div class="pagination-controls" id="paginationControls">
+              <!-- Dynamically populated -->
+            </div>
+            <div class="page-size-wrap">
+              <label>Baris:</label>
+              <select id="pageSize">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- END PAGE: TRANSACTION -->
+      <!-- ========== PAGE: SETTING ========== -->
+      <div class="page hidden" id="page-setting">
+        <div class="page-header-block">
+          <h2 class="page-h2"><i class="bi bi-sliders2"></i> Setting</h2>
+          <p class="page-desc">Konfigurasi sistem monitoring</p>
+        </div>
+        <div class="settings-grid">
+          <!-- Refresh Settings -->
+          <div class="glass-card setting-card">
+            <div class="setting-card-icon"><i class="bi bi-arrow-repeat"></i></div>
+            <h4>Auto Refresh</h4>
+            <p>Atur interval refresh data otomatis</p>
+            <div class="setting-control">
+              <label class="toggle-label">
+                <input type="checkbox" id="autoRefreshToggle" checked />
+                <span class="toggle-slider"></span>
+                Auto Refresh
+              </label>
+              <select id="refreshInterval" class="filter-select mt-2">
+                <option value="30000">30 Detik</option>
+                <option value="60000" selected>1 Menit</option>
+                <option value="300000">5 Menit</option>
+                <option value="600000">10 Menit</option>
+              </select>
+            </div>
+          </div>
+          <!-- Low Stock Settings -->
+          <div class="glass-card setting-card">
+            <div class="setting-card-icon warning"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            <h4>Low Stock Threshold</h4>
+            <p>Batas minimum stok untuk alert</p>
+            <div class="setting-control">
+              <input type="number" id="lowStockThreshold" value="10" min="1" class="filter-input" />
+              <button class="btn-apply-filter mt-2" id="saveLowStock">
+                <i class="bi bi-check-circle"></i> Simpan
+              </button>
+            </div>
+          </div>
+          <!-- Display Settings -->
+          <div class="glass-card setting-card">
+            <div class="setting-card-icon green"><i class="bi bi-display"></i></div>
+            <h4>Display Mode</h4>
+            <p>Konfigurasi tampilan dashboard</p>
+            <div class="setting-control">
+              <label class="toggle-label">
+                <input type="checkbox" id="darkModeToggleSetting" />
+                <span class="toggle-slider"></span>
+                Dark Mode
+              </label>
+              <label class="toggle-label mt-2">
+                <input type="checkbox" id="animToggle" checked />
+                <span class="toggle-slider"></span>
+                Animasi Aktif
+              </label>
+            </div>
+          </div>
+          <!-- Data Source Info -->
+          <div class="glass-card setting-card">
+            <div class="setting-card-icon purple"><i class="bi bi-database-fill"></i></div>
+            <h4>Sumber Data</h4>
+            <p>Informasi file CSV yang digunakan</p>
+            <div class="setting-control">
+              <div class="data-source-info">
+                <div class="ds-item">
+                  <i class="bi bi-file-earmark-text-fill"></i>
+                  <span>data/outgoing.csv</span>
+                  <span class="ds-badge" id="dsOutgoingStatus">Loaded</span>
+                </div>
+                <div class="ds-item mt-2">
+                  <i class="bi bi-file-earmark-text-fill"></i>
+                  <span>data/outgoingexpense.csv</span>
+                  <span class="ds-badge" id="dsExpenseStatus">Loaded</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- About -->
+        <div class="glass-card mt-4 about-card">
+          <div class="about-logo">
+            <i class="bi bi-box-seam-fill"></i>
+          </div>
+          <div class="about-info">
+            <h3>Bintang Toedjoe - Kalbe Consumer Health</h3>
+            <p>Inventory Monitoring Dashboard v2.1.0</p>
+            <p class="about-desc">Dashboard ini memantau keluar masuk material/sparepart secara realtime dari file CSV yang diperbarui secara berkala.</p>
+            <div class="about-tags">
+              <span>HTML5</span><span>CSS3</span><span>Vanilla JS</span>
+              <span>Chart.js</span><span>PapaParse</span><span>Bootstrap 5</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- END PAGE: SETTING -->
+    </main>
+    <!-- END PAGE CONTENT -->
+  </div>
+  <!-- END MAIN AREA -->
+</div>
+<!-- END APP WRAPPER -->
+<!-- ===================== EXTERNAL SCRIPTS ===================== -->
+<script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js)"></script>
+<script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js)"></script>
+<script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js)"></script>
+<!-- Custom Script -->
 <script src="script.js"></script>
-
 </body>
 </html>
