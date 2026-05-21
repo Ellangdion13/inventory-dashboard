@@ -204,31 +204,38 @@ function loadCSV(path) {
 
       complete: (results) => {
 
-        const rows = (results.data || []).map(row => ({
-          date: row['Tanggal Pengambilan'] || '',
-          item_code: row['Kode Item'] || '',
-          item_name: row['Deskripsi'] || '',
-          machine: row['Mesin (Area)'] || '',
-          qty: row['Qty'] || 0,
-          requester: row['Pemohon'] || '',
-          stock: row['QTY\nActual Stock'] || 0,
-          cost_allocation: row['Cost Alocation'] || '',
-        }));
+        console.log("RAW CSV:", results);
 
-        console.log(rows);
+        const rows = results.data.map(row => {
+
+          const stockKey = Object.keys(row).find(k =>
+            k.includes('Actual Stock')
+          );
+
+          return {
+            date: row['Tanggal Pengambilan'] || '',
+            item_code: row['Kode Item'] || '',
+            item_name: row['Deskripsi'] || '',
+            machine: row['Mesin (Area)'] || '',
+            qty: parseInt(row['Qty']) || 0,
+            requester: row['Pemohon'] || '',
+            stock: parseInt(row[stockKey]) || 0,
+            cost_allocation: row['Cost Alocation'] || '',
+          };
+        });
+
+        console.log("PARSED:", rows);
 
         resolve(rows);
       },
 
       error: (err) => {
-        console.error('CSV Error:', err);
+        console.error("CSV ERROR:", err);
         resolve([]);
       }
+
     });
 
-  });
-}
-    });
   });
 }
 
