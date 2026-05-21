@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BT-KCH Inventory Monitoring Dashboard</title>
+
   <!-- ===================== EXTERNAL LIBRARIES ===================== -->
   <!-- Bootstrap 5 -->
   <link rel="stylesheet" href="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css)" />
@@ -15,6 +16,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
 <!-- ===================== LOADING SCREEN ===================== -->
 <div id="loadingScreen" class="loading-screen">
   <div class="loading-content">
@@ -32,8 +34,10 @@
     <div class="loading-status" id="loadingStatus">Initializing system...</div>
   </div>
 </div>
+
 <!-- ===================== MAIN APP WRAPPER ===================== -->
 <div id="appWrapper" class="app-wrapper" style="display:none;">
+
   <!-- ===================== SIDEBAR ===================== -->
   <aside class="sidebar" id="sidebar">
     <!-- Sidebar Header / Logo -->
@@ -52,37 +56,45 @@
         <i class="bi bi-layout-sidebar-reverse"></i>
       </button>
     </div>
+
     <!-- Sidebar Navigation Menu -->
     <nav class="sidebar-nav">
       <div class="nav-section-label">MAIN MENU</div>
+
       <a href="#" class="nav-item active" data-page="dashboard">
         <div class="nav-icon"><i class="bi bi-speedometer2"></i></div>
         <span class="nav-label">Dashboard</span>
         <div class="nav-indicator"></div>
       </a>
+
       <a href="#" class="nav-item" data-page="machine">
         <div class="nav-icon"><i class="bi bi-gear-wide-connected"></i></div>
         <span class="nav-label">Machine</span>
         <div class="nav-indicator"></div>
       </a>
+
       <a href="#" class="nav-item" data-page="analytic">
         <div class="nav-icon"><i class="bi bi-bar-chart-line-fill"></i></div>
         <span class="nav-label">Analytic</span>
         <div class="nav-badge" id="analyticBadge">NEW</div>
         <div class="nav-indicator"></div>
       </a>
+
       <a href="#" class="nav-item" data-page="transaction">
         <div class="nav-icon"><i class="bi bi-table"></i></div>
         <span class="nav-label">Transaction</span>
         <div class="nav-indicator"></div>
       </a>
+
       <div class="nav-section-label">SYSTEM</div>
+
       <a href="#" class="nav-item" data-page="setting">
         <div class="nav-icon"><i class="bi bi-sliders2"></i></div>
         <span class="nav-label">Setting</span>
         <div class="nav-indicator"></div>
       </a>
     </nav>
+
     <!-- Sidebar Footer -->
     <div class="sidebar-footer">
       <div class="system-status">
@@ -92,8 +104,10 @@
       <div class="sidebar-version">v2.1.0</div>
     </div>
   </aside>
+
   <!-- ===================== MAIN CONTENT AREA ===================== -->
   <div class="main-area" id="mainArea">
+
     <!-- ===================== TOP NAVBAR ===================== -->
     <header class="topnav">
       <!-- Left: Hamburger + Page Title -->
@@ -106,6 +120,7 @@
           <span class="breadcrumb-title" id="pageTitle">Dashboard Overview</span>
         </div>
       </div>
+
       <!-- Center: Company Title -->
       <div class="topnav-center">
         <div class="company-title">
@@ -114,6 +129,7 @@
           <span class="company-sub">Kalbe Consumer Health Inventory Monitoring</span>
         </div>
       </div>
+
       <!-- Right: Clock, Status, Profile -->
       <div class="topnav-right">
         <!-- Real-time Clock -->
@@ -121,20 +137,24 @@
           <div class="clock-time" id="clockTime">00:00:00</div>
           <div class="clock-date" id="clockDate">Rabu, 21 Mei 2026</div>
         </div>
+
         <!-- Online Indicator -->
         <div class="online-badge">
           <div class="online-dot"></div>
           <span>ONLINE</span>
         </div>
+
         <!-- Refresh Indicator -->
         <div class="refresh-indicator" id="refreshIndicator" title="Auto refresh aktif">
           <i class="bi bi-arrow-repeat" id="refreshIcon"></i>
           <span class="refresh-label">Auto</span>
         </div>
+
         <!-- Dark Mode Toggle -->
         <button class="darkmode-btn" id="darkmodeBtn" title="Toggle Dark Mode">
           <i class="bi bi-moon-stars-fill" id="darkmodeIcon"></i>
         </button>
+
         <!-- User Profile -->
         <div class="user-profile">
           <div class="user-avatar">
@@ -147,10 +167,13 @@
         </div>
       </div>
     </header>
+
     <!-- ===================== PAGE CONTENT ===================== -->
     <main class="page-content" id="pageContent">
+
       <!-- ========== PAGE: DASHBOARD ========== -->
       <div class="page" id="page-dashboard">
+
         <!-- Date Filter Bar -->
         <div class="filter-bar glass-card">
           <div class="filter-left">
@@ -183,6 +206,7 @@
             </button>
           </div>
         </div>
+
         <!-- KPI Cards Row -->
         <div class="kpi-grid" id="kpiGrid">
           <!-- Card 1: Total Outgoing Data -->
@@ -197,6 +221,7 @@
             </div>
             <div class="kpi-sparkline"></div>
           </div>
+
           <!-- Card 2: Total Qty Keluar -->
           <div class="kpi-card" data-color="green">
             <div class="kpi-icon-wrap">
@@ -209,6 +234,7 @@
             </div>
             <div class="kpi-sparkline"></div>
           </div>
+
           <!-- Card 3: Qty Keluar Hari Ini -->
           <div class="kpi-card" data-color="cyan">
             <div class="kpi-icon-wrap">
@@ -221,6 +247,7 @@
             </div>
             <div class="kpi-sparkline"></div>
           </div>
+
           <!-- Card 4: Transaksi Hari Ini -->
           <div class="kpi-card" data-color="purple">
             <div class="kpi-icon-wrap">
@@ -233,6 +260,7 @@
             </div>
             <div class="kpi-sparkline"></div>
           </div>
+
           <!-- Card 5: Total Mesin Aktif -->
           <div class="kpi-card" data-color="orange">
             <div class="kpi-icon-wrap">
@@ -245,6 +273,7 @@
             </div>
             <div class="kpi-sparkline"></div>
           </div>
+
           <!-- Card 6: Total Requester Aktif -->
           <div class="kpi-card" data-color="red">
             <div class="kpi-icon-wrap">
@@ -258,6 +287,7 @@
             <div class="kpi-sparkline"></div>
           </div>
         </div>
+
         <!-- Charts Row 1 -->
         <div class="chart-row">
           <!-- Trend Chart -->
@@ -273,6 +303,7 @@
               <canvas id="trendChart" height="120"></canvas>
             </div>
           </div>
+
           <!-- Machine Donut -->
           <div class="chart-card glass-card chart-narrow">
             <div class="chart-header">
@@ -287,6 +318,7 @@
             </div>
           </div>
         </div>
+
         <!-- Low Stock Alert + Recent Transactions -->
         <div class="bottom-row">
           <!-- Low Stock Alert -->
@@ -302,6 +334,7 @@
               <!-- Dynamically populated -->
             </div>
           </div>
+
           <!-- Recent Transactions -->
           <div class="glass-card recent-trx-card">
             <div class="section-header">
@@ -316,18 +349,22 @@
             </div>
           </div>
         </div>
+
       </div>
       <!-- END PAGE: DASHBOARD -->
+
       <!-- ========== PAGE: MACHINE ========== -->
       <div class="page hidden" id="page-machine">
         <div class="page-header-block">
           <h2 class="page-h2"><i class="bi bi-gear-wide-connected"></i> Machine Distribution</h2>
           <p class="page-desc">Monitoring distribusi penggunaan sparepart per mesin</p>
         </div>
+
         <!-- Machine KPI Row -->
         <div class="machine-kpi-row" id="machineKpiRow">
           <!-- Dynamically populated -->
         </div>
+
         <!-- Machine Charts -->
         <div class="chart-row">
           <div class="chart-card glass-card chart-wide">
@@ -347,6 +384,7 @@
             </div>
           </div>
         </div>
+
         <!-- Machine Ranking Table -->
         <div class="glass-card mt-4">
           <div class="section-header">
@@ -371,6 +409,7 @@
             </table>
           </div>
         </div>
+
         <!-- Machine Trend -->
         <div class="glass-card mt-4">
           <div class="section-header">
@@ -382,12 +421,14 @@
         </div>
       </div>
       <!-- END PAGE: MACHINE -->
+
       <!-- ========== PAGE: ANALYTIC ========== -->
       <div class="page hidden" id="page-analytic">
         <div class="page-header-block">
           <h2 class="page-h2"><i class="bi bi-bar-chart-line-fill"></i> Analytic</h2>
           <p class="page-desc">Analisis mendalam data inventory outgoing</p>
         </div>
+
         <!-- Top 10 Items -->
         <div class="chart-row">
           <div class="chart-card glass-card" style="flex:1.5">
@@ -407,6 +448,7 @@
             </div>
           </div>
         </div>
+
         <!-- Cost Allocation & Trend -->
         <div class="chart-row mt-4">
           <div class="chart-card glass-card" style="flex:1">
@@ -426,6 +468,7 @@
             </div>
           </div>
         </div>
+
         <!-- Machine Breakdown -->
         <div class="glass-card mt-4">
           <div class="chart-header">
@@ -435,6 +478,7 @@
             <canvas id="machineBreakdownAnalytic" height="100"></canvas>
           </div>
         </div>
+
         <!-- Sparepart per Machine -->
         <div class="glass-card mt-4">
           <div class="section-header">
@@ -446,12 +490,14 @@
         </div>
       </div>
       <!-- END PAGE: ANALYTIC -->
+
       <!-- ========== PAGE: TRANSACTION MONITORING ========== -->
       <div class="page hidden" id="page-transaction">
         <div class="page-header-block">
           <h2 class="page-h2"><i class="bi bi-table"></i> Transaction Monitoring</h2>
           <p class="page-desc">Monitoring seluruh transaksi outgoing inventory secara realtime</p>
         </div>
+
         <!-- Table Controls -->
         <div class="table-controls glass-card">
           <div class="tc-left">
@@ -473,6 +519,7 @@
             <span class="row-count" id="trxRowCount">0 data</span>
           </div>
         </div>
+
         <!-- Transaction Table -->
         <div class="glass-card mt-3">
           <div class="table-responsive">
@@ -494,6 +541,7 @@
               </tbody>
             </table>
           </div>
+
           <!-- Pagination -->
           <div class="pagination-wrap">
             <div class="pagination-info" id="paginationInfo">Menampilkan 0-0 dari 0</div>
@@ -513,12 +561,14 @@
         </div>
       </div>
       <!-- END PAGE: TRANSACTION -->
+
       <!-- ========== PAGE: SETTING ========== -->
       <div class="page hidden" id="page-setting">
         <div class="page-header-block">
           <h2 class="page-h2"><i class="bi bi-sliders2"></i> Setting</h2>
           <p class="page-desc">Konfigurasi sistem monitoring</p>
         </div>
+
         <div class="settings-grid">
           <!-- Refresh Settings -->
           <div class="glass-card setting-card">
@@ -539,6 +589,7 @@
               </select>
             </div>
           </div>
+
           <!-- Low Stock Settings -->
           <div class="glass-card setting-card">
             <div class="setting-card-icon warning"><i class="bi bi-exclamation-triangle-fill"></i></div>
@@ -551,6 +602,7 @@
               </button>
             </div>
           </div>
+
           <!-- Display Settings -->
           <div class="glass-card setting-card">
             <div class="setting-card-icon green"><i class="bi bi-display"></i></div>
@@ -569,6 +621,7 @@
               </label>
             </div>
           </div>
+
           <!-- Data Source Info -->
           <div class="glass-card setting-card">
             <div class="setting-card-icon purple"><i class="bi bi-database-fill"></i></div>
@@ -590,6 +643,7 @@
             </div>
           </div>
         </div>
+
         <!-- About -->
         <div class="glass-card mt-4 about-card">
           <div class="about-logo">
@@ -607,17 +661,23 @@
         </div>
       </div>
       <!-- END PAGE: SETTING -->
+
     </main>
     <!-- END PAGE CONTENT -->
+
   </div>
   <!-- END MAIN AREA -->
+
 </div>
 <!-- END APP WRAPPER -->
+
 <!-- ===================== EXTERNAL SCRIPTS ===================== -->
 <script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js)"></script>
 <script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js)"></script>
 <script src="[cdn.jsdelivr.net](https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js)"></script>
+
 <!-- Custom Script -->
 <script src="script.js"></script>
+
 </body>
 </html>
