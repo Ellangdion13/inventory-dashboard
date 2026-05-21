@@ -202,31 +202,46 @@ function loadCSV(path) {
       skipEmptyLines: true,
       delimiter: ";",
 
-      complete: (results) => {
+complete: (results) => {
 
-        console.log("RAW CSV:", results);
+  console.log("RAW CSV:", results);
 
-        const rows = results.data.map(row => {
+  // bersihkan BOM di header
+  const cleanedData = results.data.map(row => {
+    const cleanRow = {};
 
-          const stockKey = Object.keys(row).find(k =>
-            k.includes('Actual Stock')
-          );
+    Object.keys(row).forEach(key => {
+      const cleanKey = key.replace(/^\uFEFF/, "").trim();
+      cleanRow[cleanKey] = row[key];
+    });
 
-          return {
-            date: row['Tanggal Pengambilan'] || '',
-            item_code: row['Kode Item'] || '',
-            item_name: row['Deskripsi'] || '',
-            machine: row['Mesin (Area)'] || '',
-            qty: parseInt(row['Qty']) || 0,
-            requester: row['Pemohon'] || '',
-            stock: parseInt(row[stockKey]) || 0,
-            cost_allocation: row['Cost Alocation'] || '',
-          };
-        });
+    return cleanRow;
+  });
 
-        console.log("PARSED:", rows);
+  console.log("CLEANED:", cleanedData);
 
-        resolve(rows);
+  const rows = cleanedData.map(row => {
+
+    const stockKey = Object.keys(row).find(k =>
+      k.includes('Actual Stock')
+    );
+
+    return {
+          date: row['Tanggal Pengambilan'] || '',
+          item_code: row['Kode Item'] || '',
+          item_name: row['Deskripsi'] || '',
+          machine: row['Mesin (Area)'] || '',
+          qty: parseInt(row['Qty']) || 0,
+          requester: row['Pemohon'] || '',
+          stock: parseInt(row[stockKey]) || 0,
+          cost_allocation: row['Cost Alocation'] || '',
+        };
+     });
+
+         console.log("PARSED:", rows);
+
+       resolve(rows);
+
       },
 
       error: (err) => {
