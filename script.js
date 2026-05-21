@@ -57,7 +57,8 @@ const CSV = {
 
 Chart.defaults.color = '#94a3b8';
 
-Chart.defaults.font.family = 'Inter, sans-serif';
+Chart.defaults.font.family =
+  'Inter, sans-serif';
 
 Chart.defaults.plugins.tooltip.backgroundColor =
   'rgba(10,15,30,0.92)';
@@ -66,55 +67,85 @@ Chart.defaults.plugins.tooltip.borderColor =
   'rgba(30,144,255,0.3)';
 
 Chart.defaults.plugins.tooltip.borderWidth = 1;
+
 Chart.defaults.plugins.tooltip.padding = 10;
+
 Chart.defaults.plugins.tooltip.cornerRadius = 8;
 
 /* ============================================================
    UTILITIES
 ============================================================ */
 
-const $ = (selector) => document.querySelector(selector);
+const $ = (selector) =>
+  document.querySelector(selector);
 
 const $$ = (selector) =>
   document.querySelectorAll(selector);
 
 function fmtNum(value = 0) {
-  return Number(value).toLocaleString('id-ID');
+
+  return Number(value)
+    .toLocaleString('id-ID');
 }
 
 function fmtCurrency(value = 0) {
-  return 'Rp ' + Number(value).toLocaleString('id-ID');
+
+  return 'Rp ' +
+    Number(value)
+      .toLocaleString('id-ID');
 }
 
 function fmtDate(date) {
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const yy = date.getFullYear();
+
+  const dd =
+    String(date.getDate())
+      .padStart(2, '0');
+
+  const mm =
+    String(date.getMonth() + 1)
+      .padStart(2, '0');
+
+  const yy =
+    date.getFullYear();
 
   return `${dd}/${mm}/${yy}`;
 }
 
 function todayStr() {
+
   return fmtDate(new Date());
 }
 
 function parseDate(str) {
+
   if (!str) return null;
 
-  const parts = str.split('/');
+  if (str.includes('/')) {
 
-  if (parts.length !== 3) return null;
+    const parts = str.split('/');
 
-  return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    if (parts.length !== 3)
+      return null;
+
+    return new Date(
+      `${parts[2]}-${parts[1]}-${parts[0]}`
+    );
+  }
+
+  return new Date(str);
 }
 
 function lastNDates(n) {
+
   const dates = [];
 
   for (let i = n - 1; i >= 0; i--) {
+
     const d = new Date();
 
-    d.setDate(d.getDate() - i);
+    d.setDate(
+      d.getDate() - i
+    );
 
     dates.push(fmtDate(d));
   }
@@ -123,6 +154,7 @@ function lastNDates(n) {
 }
 
 function gradColors(n) {
+
   const palette = [
     '#1e90ff',
     '#00e5a0',
@@ -143,13 +175,17 @@ function gradColors(n) {
 
   return Array.from(
     { length: n },
-    (_, i) => palette[i % palette.length]
+    (_, i) =>
+      palette[i % palette.length]
   );
 }
 
 function destroyChart(key) {
+
   if (App.charts[key]) {
+
     App.charts[key].destroy();
+
     delete App.charts[key];
   }
 }
@@ -159,11 +195,18 @@ function destroyChart(key) {
 ============================================================ */
 
 function runLoadingSequence() {
-  const bar = $('#loadingBar');
-  const status = $('#loadingStatus');
 
-  const screen = $('#loadingScreen');
-  const app = $('#appWrapper');
+  const bar =
+    $('#loadingBar');
+
+  const status =
+    $('#loadingStatus');
+
+  const screen =
+    $('#loadingScreen');
+
+  const app =
+    $('#appWrapper');
 
   const steps = [
     [15, 'Initializing modules...'],
@@ -176,28 +219,43 @@ function runLoadingSequence() {
 
   let idx = 0;
 
-  const tick = setInterval(() => {
-    if (idx >= steps.length) {
-      clearInterval(tick);
+  const tick =
+    setInterval(() => {
 
-      setTimeout(() => {
-        screen.classList.add('fade-out');
+      if (idx >= steps.length) {
 
-        app.style.display = 'flex';
+        clearInterval(tick);
 
         setTimeout(() => {
-          screen.style.display = 'none';
-        }, 800);
-      }, 300);
 
-      return;
-    }
+          screen.classList.add(
+            'fade-out'
+          );
 
-    const [pct, msg] = steps[idx++];
+          app.style.display = 'flex';
 
-    bar.style.width = pct + '%';
-    status.textContent = msg;
-  }, 380);
+          setTimeout(() => {
+
+            screen.style.display =
+              'none';
+
+          }, 800);
+
+        }, 300);
+
+        return;
+      }
+
+      const [pct, msg] =
+        steps[idx++];
+
+      bar.style.width =
+        pct + '%';
+
+      status.textContent =
+        msg;
+
+    }, 380);
 }
 
 /* ============================================================
@@ -205,6 +263,7 @@ function runLoadingSequence() {
 ============================================================ */
 
 function startClock() {
+
   const days = [
     'Minggu',
     'Senin',
@@ -231,13 +290,23 @@ function startClock() {
   ];
 
   function updateClock() {
+
     const now = new Date();
 
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    const ss = String(now.getSeconds()).padStart(2, '0');
+    const hh =
+      String(now.getHours())
+        .padStart(2, '0');
 
-    $('#clockTime').textContent = `${hh}:${mm}:${ss}`;
+    const mm =
+      String(now.getMinutes())
+        .padStart(2, '0');
+
+    const ss =
+      String(now.getSeconds())
+        .padStart(2, '0');
+
+    $('#clockTime').textContent =
+      `${hh}:${mm}:${ss}`;
 
     $('#clockDate').textContent =
       `${days[now.getDay()]}, ` +
@@ -257,17 +326,23 @@ function startClock() {
 ============================================================ */
 
 async function loadAllData() {
+
   try {
+
     const [outgoing, expense] =
       await Promise.all([
         loadCSV(CSV.outgoing),
         loadCSV(CSV.expense),
       ]);
 
-    App.data.outgoing = outgoing;
-    App.data.expense = expense;
+    App.data.outgoing =
+      outgoing;
 
-    App.data.filtered = [...outgoing];
+    App.data.expense =
+      expense;
+
+    App.data.filtered =
+      [...outgoing];
 
     setDsStatus(
       'dsOutgoingStatus',
@@ -279,41 +354,188 @@ async function loadAllData() {
       expense.length > 0
     );
 
+    console.log(
+      'OUTGOING ROWS:',
+      outgoing.length
+    );
+
+    console.log(
+      'EXPENSE ROWS:',
+      expense.length
+    );
+
     return true;
 
   } catch (err) {
 
-    console.error('LOAD ERROR:', err);
+    console.error(
+      'LOAD ERROR:',
+      err
+    );
 
     return false;
   }
 }
 
 function loadCSV(path) {
+
   return new Promise((resolve) => {
 
     Papa.parse(path, {
+
       download: true,
+
       header: true,
+
       skipEmptyLines: true,
+
       trimHeaders: true,
 
+      dynamicTyping: false,
+
       complete: (results) => {
-        resolve(results.data || []);
+
+        console.log(
+          'RAW CSV:',
+          path,
+          results.data.length
+        );
+
+        const cleaned =
+          (results.data || []).map(row => ({
+
+            /* =========================
+               MAIN FIELD MAPPING
+            ========================= */
+
+            date:
+              String(
+                row["Tanggal Pengambilan"] ||
+                row["Tanggal_Pengambilan"] ||
+                ''
+              ).trim(),
+
+            lokasi:
+              String(
+                row["Lokasi"] || ''
+              ).trim(),
+
+            kodeItem:
+              String(
+                row["Kode Item"] ||
+                row["Kode_Item"] ||
+                ''
+              ).trim(),
+
+            description:
+              String(
+                row["Deskripsi"] || ''
+              ).trim(),
+
+            machine:
+              String(
+                row["Mesin (Area)"] ||
+                row["Mesin_(Area)"] ||
+                ''
+              ).trim(),
+
+            qty:
+              Number(
+                String(
+                  row["Qty"] || '0'
+                )
+                .replace(/,/g, '')
+                .trim()
+              ) || 0,
+
+            uom:
+              String(
+                row["UOM"] || ''
+              ).trim(),
+
+            requester:
+              String(
+                row["Pemohon"] || ''
+              ).trim(),
+
+            status:
+              String(
+                row["Status"] || ''
+              ).trim(),
+
+            wr:
+              String(
+                row["WR"] || ''
+              ).trim(),
+
+            wo:
+              String(
+                row["WO"] || ''
+              ).trim(),
+
+            actualStock:
+              String(
+                row["QTY Actual Stock"] ||
+                row["QTY_Actual_Stock"] ||
+                ''
+              ).trim(),
+
+            noForm:
+              String(
+                row["No Form"] ||
+                row["No_Form"] ||
+                ''
+              ).trim(),
+
+            costAllocation:
+              String(
+                row["Cost Alocation"] ||
+                row["Cost_Alocation"] ||
+                ''
+              ).trim(),
+
+            giver:
+              String(
+                row["Yang Menyerahkan"] ||
+                row["Yang_Menyerahkan"] ||
+                ''
+              ).trim(),
+
+          }));
+
+        console.log(
+          'CLEANED CSV:',
+          path,
+          cleaned.length
+        );
+
+        resolve(cleaned);
       },
 
-      error: () => resolve([]),
+      error: (err) => {
+
+        console.error(
+          'CSV ERROR:',
+          path,
+          err
+        );
+
+        resolve([]);
+      },
     });
 
   });
 }
 
 function setDsStatus(id, ok) {
-  const el = document.getElementById(id);
+
+  const el =
+    document.getElementById(id);
 
   if (!el) return;
 
-  el.textContent = ok ? 'Loaded' : 'Error';
+  el.textContent =
+    ok ? 'Loaded' : 'Error';
 
   el.style.background = ok
     ? 'rgba(0,229,160,0.12)'
@@ -330,20 +552,29 @@ function setDsStatus(id, ok) {
 
 function applyDateFilter() {
 
-  const from = App.ui.filterFrom;
-  const to = App.ui.filterTo;
+  const from =
+    App.ui.filterFrom;
+
+  const to =
+    App.ui.filterTo;
 
   App.data.filtered =
     App.data.outgoing.filter((row) => {
 
-      if (!row.date) return false;
+      if (!row.date)
+        return true;
 
-      const d = parseDate(row.date);
+      const d =
+        parseDate(row.date);
 
-      if (!d) return false;
+      if (!d)
+        return true;
 
-      if (from && d < from) return false;
-      if (to && d > to) return false;
+      if (from && d < from)
+        return false;
+
+      if (to && d > to)
+        return false;
 
       return true;
     });
@@ -351,64 +582,13 @@ function applyDateFilter() {
   renderCurrentPage();
 }
 
-function setQuickRange(range) {
-
-  const today = new Date();
-
-  today.setHours(0, 0, 0, 0);
-
-  $$('.qbtn').forEach((btn) => {
-    btn.classList.remove('active');
-  });
-
-  $(`.qbtn[data-range="${range}"]`)
-    ?.classList.add('active');
-
-  switch (range) {
-
-    case 'today':
-      App.ui.filterFrom = today;
-      App.ui.filterTo = today;
-      break;
-
-    case 'week':
-      const weekStart = new Date(today);
-
-      weekStart.setDate(
-        today.getDate() - today.getDay() + 1
-      );
-
-      App.ui.filterFrom = weekStart;
-      App.ui.filterTo = today;
-
-      break;
-
-    case 'month':
-      App.ui.filterFrom =
-        new Date(
-          today.getFullYear(),
-          today.getMonth(),
-          1
-        );
-
-      App.ui.filterTo = today;
-
-      break;
-
-    default:
-      App.ui.filterFrom = null;
-      App.ui.filterTo = null;
-  }
-
-  syncFilterInput();
-
-  applyDateFilter();
-}
-
 function syncFilterInput() {
 
-  const from = $('#filterDateFrom');
-  const to = $('#filterDateTo');
+  const from =
+    $('#filterDateFrom');
+
+  const to =
+    $('#filterDateTo');
 
   from.value =
     App.ui.filterFrom
@@ -431,19 +611,26 @@ function syncFilterInput() {
 
 function computeKPIs(data) {
 
-  const today = todayStr();
+  const today =
+    todayStr();
 
   const todayRows =
-    data.filter((r) => r.date === today);
+    data.filter(
+      (r) => r.date === today
+    );
 
   const machines =
     [...new Set(
-      data.map((r) => r.machine).filter(Boolean)
+      data.map(
+        (r) => r.machine
+      ).filter(Boolean)
     )];
 
   const requesters =
     [...new Set(
-      data.map((r) => r.requester).filter(Boolean)
+      data.map(
+        (r) => r.requester
+      ).filter(Boolean)
     )];
 
   return {
@@ -454,14 +641,16 @@ function computeKPIs(data) {
     totalQty:
       data.reduce(
         (sum, r) =>
-          sum + (parseInt(r.qty) || 0),
+          sum +
+          (parseInt(r.qty) || 0),
         0
       ),
 
     todayQty:
       todayRows.reduce(
         (sum, r) =>
-          sum + (parseInt(r.qty) || 0),
+          sum +
+          (parseInt(r.qty) || 0),
         0
       ),
 
@@ -478,7 +667,8 @@ function computeKPIs(data) {
 
 function renderKPIs(data) {
 
-  const kpi = computeKPIs(data);
+  const kpi =
+    computeKPIs(data);
 
   animateCounter(
     'kpiTotalData',
@@ -516,7 +706,8 @@ function renderKPIs(data) {
 
 function animateCounter(id, target) {
 
-  const el = document.getElementById(id);
+  const el =
+    document.getElementById(id);
 
   if (!el) return;
 
@@ -526,25 +717,33 @@ function animateCounter(id, target) {
     ) || 0;
 
   const duration = 800;
-  const startTime = performance.now();
+
+  const startTime =
+    performance.now();
 
   function update(now) {
 
     const progress =
       Math.min(
-        (now - startTime) / duration,
+        (now - startTime) /
+        duration,
         1
       );
 
     const ease =
-      1 - Math.pow(1 - progress, 3);
+      1 - Math.pow(
+        1 - progress,
+        3
+      );
 
     const value =
       Math.round(
-        start + (target - start) * ease
+        start +
+        (target - start) * ease
       );
 
-    el.textContent = fmtNum(value);
+    el.textContent =
+      fmtNum(value);
 
     if (progress < 1) {
       requestAnimationFrame(update);
@@ -552,302 +751,6 @@ function animateCounter(id, target) {
   }
 
   requestAnimationFrame(update);
-}
-
-/* ============================================================
-   DASHBOARD CHARTS
-============================================================ */
-
-function renderTrendChart(data) {
-
-  const dates = lastNDates(7);
-
-  const labels =
-    dates.map((d) => {
-      const p = d.split('/');
-      return `${p[0]}/${p[1]}`;
-    });
-
-  const qtys =
-    dates.map((date) =>
-      data
-        .filter((r) => r.date === date)
-        .reduce(
-          (sum, r) =>
-            sum + (parseInt(r.qty) || 0),
-          0
-        )
-    );
-
-  destroyChart('trend');
-
-  const ctx =
-    document.getElementById('trendChart');
-
-  if (!ctx) return;
-
-  App.charts.trend = new Chart(ctx, {
-
-    type: 'line',
-
-    data: {
-      labels,
-
-      datasets: [
-        {
-          label: 'Total Qty',
-
-          data: qtys,
-
-          borderColor: '#1e90ff',
-
-          backgroundColor:
-            'rgba(30,144,255,0.08)',
-
-          fill: true,
-
-          tension: 0.4,
-
-          borderWidth: 2.5,
-
-          pointRadius: 5,
-        },
-      ],
-    },
-
-    options: {
-      responsive: true,
-
-      maintainAspectRatio: true,
-
-      plugins: {
-        legend: {
-          position: 'top',
-        },
-      },
-
-      scales: {
-        x: {
-          grid: {
-            color:
-              'rgba(255,255,255,0.04)',
-          },
-
-          border: {
-            display: false,
-          },
-        },
-
-        y: {
-          grid: {
-            color:
-              'rgba(255,255,255,0.05)',
-          },
-
-          border: {
-            display: false,
-          },
-        },
-      },
-    },
-  });
-}
-
-/* ============================================================
-   PAGE NAVIGATION
-============================================================ */
-
-function navigateTo(page) {
-
-  $$('.page').forEach((p) => {
-    p.classList.add('hidden');
-  });
-
-  document
-    .getElementById(`page-${page}`)
-    ?.classList.remove('hidden');
-
-  $$('.nav-item').forEach((item) => {
-    item.classList.toggle(
-      'active',
-      item.dataset.page === page
-    );
-  });
-
-  const titles = {
-    dashboard: 'Dashboard Overview',
-    machine: 'Machine Distribution',
-    analytic: 'Analytic',
-    transaction: 'Transaction Monitoring',
-    setting: 'Setting',
-  };
-
-  const icons = {
-    dashboard: 'bi-speedometer2',
-    machine: 'bi-gear-wide-connected',
-    analytic: 'bi-bar-chart-line-fill',
-    transaction: 'bi-table',
-    setting: 'bi-sliders2',
-  };
-
-  $('#pageTitle').textContent =
-    titles[page] || page;
-
-  $('.breadcrumb-icon i').className =
-    'bi ' + (icons[page] || 'bi-grid');
-
-  App.ui.currentPage = page;
-
-  renderCurrentPage();
-
-  $('#sidebar')
-    ?.classList.remove('mobile-open');
-}
-
-function renderCurrentPage() {
-
-  const data = App.data.filtered;
-
-  switch (App.ui.currentPage) {
-
-    case 'dashboard':
-      renderKPIs(data);
-      renderTrendChart(data);
-      break;
-
-    case 'machine':
-      renderMachinePage(data);
-      break;
-
-    case 'analytic':
-      renderAnalyticPage(data);
-      break;
-
-    case 'transaction':
-      renderTransactionPage();
-      break;
-  }
-}
-
-/* ============================================================
-   SIDEBAR
-============================================================ */
-
-function initSidebar() {
-
-  const sidebar = $('#sidebar');
-  const mainArea = $('#mainArea');
-
-  $('#sidebarToggle')
-    ?.addEventListener('click', () => {
-
-      App.ui.sidebarCollapsed =
-        !App.ui.sidebarCollapsed;
-
-      sidebar.classList.toggle(
-        'collapsed',
-        App.ui.sidebarCollapsed
-      );
-
-      mainArea.classList.toggle(
-        'sidebar-collapsed',
-        App.ui.sidebarCollapsed
-      );
-
-      setTimeout(() => {
-        Object.values(App.charts)
-          .forEach((c) => c.resize?.());
-      }, 350);
-    });
-
-  $('#mobileMenuBtn')
-    ?.addEventListener('click', () => {
-
-      sidebar.classList.toggle(
-        'mobile-open'
-      );
-    });
-}
-
-/* ============================================================
-   NAVIGATION
-============================================================ */
-
-function initNavItems() {
-
-  $$('.nav-item').forEach((item) => {
-
-    item.addEventListener('click', (e) => {
-
-      e.preventDefault();
-
-      navigateTo(item.dataset.page);
-    });
-  });
-}
-
-/* ============================================================
-   DARK MODE
-============================================================ */
-
-function initDarkMode() {
-
-  const icon = $('#darkmodeIcon');
-
-  function applyDarkMode(dark) {
-
-    document.body.classList.toggle(
-      'light-mode',
-      !dark
-    );
-
-    App.settings.darkMode = dark;
-
-    if (icon) {
-      icon.className = dark
-        ? 'bi bi-moon-stars-fill'
-        : 'bi bi-sun-fill';
-    }
-  }
-
-  $('#darkmodeBtn')
-    ?.addEventListener('click', () => {
-
-      applyDarkMode(
-        !App.settings.darkMode
-      );
-    });
-
-  applyDarkMode(true);
-}
-
-/* ============================================================
-   AUTO REFRESH
-============================================================ */
-
-function startAutoRefresh() {
-
-  clearInterval(App.intervals.refresh);
-
-  if (!App.settings.autoRefresh)
-    return;
-
-  App.intervals.refresh =
-    setInterval(async () => {
-
-      $('#refreshIcon')
-        ?.classList.add('spinning');
-
-      await loadAllData();
-
-      applyDateFilter();
-
-      setTimeout(() => {
-        $('#refreshIcon')
-          ?.classList.remove('spinning');
-      }, 1000);
-
-    }, App.settings.refreshInterval);
 }
 
 /* ============================================================
@@ -860,12 +763,6 @@ async function init() {
 
   startClock();
 
-  initSidebar();
-
-  initNavItems();
-
-  initDarkMode();
-
   await loadAllData();
 
   setTimeout(() => {
@@ -873,9 +770,9 @@ async function init() {
     App.data.filtered =
       [...App.data.outgoing];
 
-    navigateTo('dashboard');
-
-    startAutoRefresh();
+    renderKPIs(
+      App.data.filtered
+    );
 
   }, 2400);
 }
