@@ -7,38 +7,56 @@ let filteredData = [];
 
 let charts = {};
 
+// =========================
+// LOAD CSV
+// =========================
+
 async function loadCSV(){
 
-  const response = await fetch(
-    `outgoing.csv?v=${Date.now()}`,
-    {
-      cache:"no-store"
-    }
-  );
+  try{
 
-  const csvText = await response.text();
+    const response = await fetch(
+      `outgoing.csv?v=${Date.now()}`,
+      {
+        cache:"no-store"
+      }
+    );
 
-  Papa.parse(csvText,{
+    const csvText = await response.text();
 
-    header:true,
-    skipEmptyLines:true,
+    Papa.parse(csvText,{
 
-    complete:function(results){
+      header:true,
+      skipEmptyLines:true,
 
-      rawData = results.data.filter(row =>
-        row["Kode Item"] &&
-        row["Kode Item"].trim() !== ""
-      );
+      complete:function(results){
 
-      filteredData = [...rawData];
+        rawData = results.data.filter(row =>
+          row["Kode Item"] &&
+          row["Kode Item"].trim() !== ""
+        );
 
-      updateDashboard();
+        filteredData = [...rawData];
 
-    }
+        updateDashboard();
 
-  });
+      }
+
+    });
+
+  }
+
+  catch(err){
+
+    console.error("CSV Load Error:",err);
+
+  }
 
 }
+
+// =========================
+// UPDATE DASHBOARD
+// =========================
 
 function updateDashboard(){
 
@@ -47,6 +65,10 @@ function updateDashboard(){
   renderTable();
 
 }
+
+// =========================
+// KPI
+// =========================
 
 function updateKPI(){
 
@@ -83,18 +105,32 @@ function updateKPI(){
 
 }
 
+// =========================
+// RENDER CHARTS
+// =========================
+
 function renderCharts(){
 
-  Object.values(charts)
-  .forEach(chart => chart.destroy());
+  // DESTROY OLD CHARTS
 
+  Object.values(charts).forEach(chart => {
+
+    if(chart){
+      chart.destroy();
+    }
+
+  });
+
+  // =========================
   // TOP ITEM
+  // =========================
 
   const itemMap = {};
 
   filteredData.forEach(d=>{
 
-    const item = d["Kode Item"];
+    const item =
+    d["Kode Item"] || "UNKNOWN";
 
     itemMap[item] =
     (itemMap[item] || 0)
@@ -131,7 +167,8 @@ function renderCharts(){
             '#00ffe1'
           ],
 
-          borderRadius:12
+          borderRadius:12,
+          borderSkipped:false
 
         }]
 
@@ -143,13 +180,16 @@ function renderCharts(){
 
   );
 
+  // =========================
   // DAILY TREND
+  // =========================
 
   const dailyMap = {};
 
   filteredData.forEach(d=>{
 
-    const date = d.Tanggal;
+    const date =
+    d.Tanggal || "UNKNOWN";
 
     dailyMap[date] =
     (dailyMap[date] || 0) + 1;
@@ -174,13 +214,16 @@ function renderCharts(){
 
           borderColor:'#00c2ff',
 
-          backgroundColor:'rgba(0,194,255,.15)',
+          backgroundColor:
+          'rgba(0,194,255,.15)',
 
           fill:true,
 
           tension:.4,
 
-          pointRadius:4
+          pointRadius:4,
+
+          pointBackgroundColor:'#00c2ff'
 
         }]
 
@@ -192,13 +235,16 @@ function renderCharts(){
 
   );
 
+  // =========================
   // AREA
+  // =========================
 
   const areaMap = {};
 
   filteredData.forEach(d=>{
 
-    const area = d["Mesin/Area"];
+    const area =
+    d["Mesin/Area"] || "UNKNOWN";
 
     areaMap[area] =
     (areaMap[area] || 0) + 1;
@@ -227,25 +273,46 @@ function renderCharts(){
             '#5c6cff',
             '#00ffe1',
             '#ff9800'
-          ]
+          ],
+
+          borderWidth:0
 
         }]
 
       },
 
-      options:chartStyle()
+      options:{
+
+        responsive:true,
+
+        maintainAspectRatio:false,
+
+        plugins:{
+
+          legend:{
+            labels:{
+              color:'#93a4b7'
+            }
+          }
+
+        }
+
+      }
 
     }
 
   );
 
+  // =========================
   // REQUESTER
+  // =========================
 
   const reqMap = {};
 
   filteredData.forEach(d=>{
 
-    const req = d.Pemohon;
+    const req =
+    d.Pemohon || "UNKNOWN";
 
     reqMap[req] =
     (reqMap[req] || 0) + 1;
@@ -275,7 +342,13 @@ function renderCharts(){
 
           backgroundColor:'#5c6cff',
 
-          borderRadius:10
+          borderRadius:10,
+
+          borderSkipped:false,
+
+          barThickness:18,
+
+          maxBarThickness:20
 
         }]
 
@@ -285,7 +358,45 @@ function renderCharts(){
 
         ...chartStyle(),
 
-        indexAxis:'y'
+        indexAxis:'y',
+
+        plugins:{
+          legend:{
+            display:false
+          }
+        },
+
+        scales:{
+
+          x:{
+            ticks:{
+              color:'#93a4b7'
+            },
+
+            grid:{
+              color:'rgba(255,255,255,.04)'
+            }
+          },
+
+          y:{
+
+            ticks:{
+              color:'#93a4b7',
+
+              autoSkip:false,
+
+              font:{
+                size:11
+              }
+            },
+
+            grid:{
+              display:false
+            }
+
+          }
+
+        }
 
       }
 
@@ -294,6 +405,10 @@ function renderCharts(){
   );
 
 }
+
+// =========================
+// CHART STYLE
+// =========================
 
 function chartStyle(){
 
@@ -347,6 +462,10 @@ function chartStyle(){
 
 }
 
+// =========================
+// TABLE
+// =========================
+
 function renderTable(){
 
   const tbody =
@@ -388,6 +507,10 @@ function renderTable(){
   });
 
 }
+
+// =========================
+// FILTER
+// =========================
 
 function applyFilters(){
 
@@ -437,6 +560,10 @@ function applyFilters(){
 
 }
 
+// =========================
+// SEARCH TABLE
+// =========================
+
 document
 .getElementById("searchInput")
 .addEventListener("keyup",function(){
@@ -460,6 +587,10 @@ document
 
 });
 
+// =========================
+// CLOCK
+// =========================
+
 function updateClock(){
 
   const now = new Date();
@@ -478,6 +609,28 @@ setInterval(updateClock,1000);
 
 updateClock();
 
+// =========================
+// INITIAL LOAD
+// =========================
+
 loadCSV();
 
-setInterval(loadCSV,5000);
+// =========================
+// AUTO REFRESH
+// =========================
+
+setInterval(async ()=>{
+
+  try{
+
+    await loadCSV();
+
+  }
+
+  catch(err){
+
+    console.log(err);
+
+  }
+
+},5000);
