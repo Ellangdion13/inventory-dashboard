@@ -223,8 +223,6 @@ function startClock() {
 }
 
 // ===================== DATA LOADING =====================
-
-/** Load and parse both CSV files */
 async function loadAllData() {
   try {
     const [outgoing, expense] = await Promise.all([
@@ -234,13 +232,22 @@ async function loadAllData() {
 
     App.data.outgoing = outgoing;
     App.data.expense  = expense;
-    App.data.filtered = [...outgoing];
 
-    // Mark data source status
+    // GABUNGKAN KEDUANYA
+    App.data.filtered = [
+      ...outgoing,
+      ...expense
+    ];
+
     setDsStatus('dsOutgoingStatus', outgoing.length > 0);
-    setDsStatus('dsExpenseStatus',  expense.length  > 0);
+    setDsStatus('dsExpenseStatus', expense.length > 0);
+
+    console.log('Outgoing:', outgoing.length);
+    console.log('Expense:', expense.length);
+    console.log('Combined:', App.data.filtered.length);
 
     return true;
+
   } catch (err) {
     console.error('Data load error:', err);
     return false;
@@ -355,12 +362,20 @@ function applyDateFilter() {
   const from = App.ui.filterFrom;
   const to   = App.ui.filterTo;
 
-  App.data.filtered = App.data.outgoing.filter(row => {
+  const allData = [
+    ...App.data.outgoing,
+    ...App.data.expense
+  ];
+
+  App.data.filtered = allData.filter(row => {
     if (!row.date) return false;
+
     const d = parseDate(row.date);
     if (!d) return false;
+
     if (from && d < from) return false;
-    if (to   && d > to)   return false;
+    if (to && d > to) return false;
+
     return true;
   });
 
@@ -1522,29 +1537,35 @@ function initNavItems() {
 // ===================== FILTER CONTROLS =====================
 
 function initFilterControls() {
-  // Quick filter buttons
   document.querySelectorAll('.qbtn').forEach(btn => {
     btn.addEventListener('click', () => setQuickRange(btn.dataset.range));
   });
 
-  // Apply filter button
   document.getElementById('applyFilter')?.addEventListener('click', () => {
     const fromVal = document.getElementById('filterDateFrom')?.value;
     const toVal   = document.getElementById('filterDateTo')?.value;
+
     App.ui.filterFrom = fromVal ? new Date(fromVal) : null;
-    App.ui.filterTo   = toVal   ? new Date(toVal)   : null;
+    App.ui.filterTo   = toVal ? new Date(toVal) : null;
+
     applyDateFilter();
   });
 
-  // Reset filter
   document.getElementById('resetFilter')?.addEventListener('click', () => {
     App.ui.filterFrom = null;
     App.ui.filterTo   = null;
+
     document.getElementById('filterDateFrom').value = '';
     document.getElementById('filterDateTo').value   = '';
-    App.data.filtered = [...App.data.outgoing];
+
+    App.data.filtered = [
+      ...App.data.outgoing,
+      ...App.data.expense
+    ];
+
     document.querySelectorAll('.qbtn').forEach(b => b.classList.remove('active'));
     document.querySelector('.qbtn[data-range="all"]')?.classList.add('active');
+
     renderCurrentPage();
   });
 }
@@ -1739,9 +1760,13 @@ async function init() {
     loadAllData(),          // fetches + parses CSV
   ]);
 
-  // 4. Both done — finish animation, then render
-  App.data.filtered = [...App.data.outgoing];
-  finishLoading();          // bar → 100%, fade out loading screen
+   // 4. Both done — finish animation, then render
+   App.data.filtered = [
+     ...App.data.outgoing,
+     ...App.data.expense
+   ];
+
+finishLoading();
 
   // Small delay so fade-out starts before charts render
   setTimeout(() => {
