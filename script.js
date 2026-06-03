@@ -1,10 +1,11 @@
+JS
 /* ============================================================
    BINTANG TOEDJOE - KCH INVENTORY MONITORING DASHBOARD
    Main JavaScript — Vanilla JS + Chart.js + PapaParse
    ============================================================ */
-
+ 
 'use strict';
-
+ 
 // ===================== GLOBAL STATE =====================
 const App = {
   data: {
@@ -31,11 +32,11 @@ const App = {
   charts: {},           // Chart.js instances
   intervals: {},        // setInterval references
 };
-
+ 
 // ===================== CSV FILE PATHS =====================
 const CSV_OUTGOING = './data/outgoing.csv';
 const CSV_EXPENSE  = './data/outgoingexpense.csv';
-
+ 
 // ===================== CHART.JS GLOBAL DEFAULTS =====================
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.font.family = 'Inter, sans-serif';
@@ -44,9 +45,9 @@ Chart.defaults.plugins.tooltip.borderColor = 'rgba(30,144,255,0.3)';
 Chart.defaults.plugins.tooltip.borderWidth = 1;
 Chart.defaults.plugins.tooltip.padding = 10;
 Chart.defaults.plugins.tooltip.cornerRadius = 8;
-
+ 
 // ===================== UTILITY FUNCTIONS =====================
-
+ 
 /** Format date object → dd/mm/yyyy */
 function fmtDate(d) {
   const dd = String(d.getDate()).padStart(2, '0');
@@ -54,7 +55,7 @@ function fmtDate(d) {
   const yyyy = d.getFullYear();
   return `${dd}/${mm}/${yyyy}`;
 }
-
+ 
 /** Parse dd/mm/yyyy → Date object */
 function parseDate(str) {
   if (!str) return null;
@@ -62,22 +63,22 @@ function parseDate(str) {
   if (parts.length !== 3) return null;
   return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
 }
-
+ 
 /** Format number with thousand separator */
 function fmtNum(n) {
   return Number(n).toLocaleString('id-ID');
 }
-
+ 
 /** Format currency IDR */
 function fmtCurrency(n) {
   return 'Rp ' + Number(n).toLocaleString('id-ID');
 }
-
+ 
 /** Get today's date as dd/mm/yyyy */
 function todayStr() {
   return fmtDate(new Date());
 }
-
+ 
 /** Get array of last N dates as dd/mm/yyyy */
 function lastNDates(n) {
   const dates = [];
@@ -88,7 +89,7 @@ function lastNDates(n) {
   }
   return dates;
 }
-
+ 
 /** Generate a gradient color array */
 function gradColors(n) {
   const palette = [
@@ -98,7 +99,7 @@ function gradColors(n) {
   ];
   return Array.from({ length: n }, (_, i) => palette[i % palette.length]);
 }
-
+ 
 /** Destroy chart if exists, then recreate */
 function destroyChart(key) {
   if (App.charts[key]) {
@@ -106,16 +107,16 @@ function destroyChart(key) {
     delete App.charts[key];
   }
 }
-
+ 
 // ===================== LOADING SCREEN =====================
-
+ 
 /** Animate loading bar and show app */
 function runLoadingSequence() {
   const bar    = document.getElementById('loadingBar');
   const status = document.getElementById('loadingStatus');
   const screen = document.getElementById('loadingScreen');
   const app    = document.getElementById('appWrapper');
-
+ 
   const steps = [
     { pct: 15,  msg: 'Initializing modules...' },
     { pct: 35,  msg: 'Loading CSV data sources...' },
@@ -124,9 +125,9 @@ function runLoadingSequence() {
     { pct: 95,  msg: 'Rendering dashboard...' },
     { pct: 100, msg: 'System ready!' },
   ];
-
+ 
   let idx = 0;
-
+ 
   const tick = setInterval(() => {
     if (idx >= steps.length) {
       clearInterval(tick);
@@ -142,33 +143,33 @@ function runLoadingSequence() {
     status.textContent = s.msg;
   }, 380);
 }
-
+ 
 // ===================== REALTIME CLOCK =====================
-
+ 
 function startClock() {
   const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
   const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli',
                   'Agustus','September','Oktober','November','Desember'];
-
+ 
   function tick() {
     const now = new Date();
     const hh  = String(now.getHours()).padStart(2, '0');
     const mm  = String(now.getMinutes()).padStart(2, '0');
     const ss  = String(now.getSeconds()).padStart(2, '0');
-
+ 
     const el = document.getElementById('clockTime');
     const de = document.getElementById('clockDate');
     if (el) el.textContent = `${hh}:${mm}:${ss}`;
     if (de) de.textContent =
       `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
   }
-
+ 
   tick();
   App.intervals.clock = setInterval(tick, 1000);
 }
-
+ 
 // ===================== DATA LOADING =====================
-
+ 
 /** Load and parse both CSV files */
 async function loadAllData() {
   try {
@@ -176,88 +177,77 @@ async function loadAllData() {
       loadCSV(CSV_OUTGOING),
       loadCSV(CSV_EXPENSE),
     ]);
-
+ 
     App.data.outgoing = outgoing;
     App.data.expense  = expense;
     App.data.filtered = [...outgoing];
-
+ 
     // Mark data source status
     setDsStatus('dsOutgoingStatus', outgoing.length > 0);
     setDsStatus('dsExpenseStatus',  expense.length  > 0);
-
+ 
     return true;
   } catch (err) {
     console.error('Data load error:', err);
     return false;
   }
 }
-
+ 
+// ===================== FIX: loadCSV — struktur Promise & callback diperbaiki =====================
 /** Load a single CSV file using PapaParse */
 function loadCSV(path) {
   return new Promise((resolve) => {
-
+ 
     Papa.parse(path, {
       download: true,
       header: true,
       skipEmptyLines: true,
       delimiter: ",",
-      
+ 
       complete: (results) => {
         console.log("FIELDS:", results.meta.fields);
         console.log("RAW:", results.data);
-      }
-    } };
-
-  console.log("RAW CSV:", results);
-
-  // bersihkan BOM di header
-  const cleanedData = results.data.map(row => {
-    const cleanRow = {};
-
-    Object.keys(row).forEach(key => {
-      const cleanKey = key.replace(/^\uFEFF/, "").trim();
-      cleanRow[cleanKey] = row[key];
-    });
-
-    return cleanRow;
-  });
-
-  console.log("CLEANED:", cleanedData);
-
-  const rows = cleanedData.map(row => {
-
-    const stockKey = Object.keys(row).find(k =>
-      k.includes('Actual Stock')
-    );
-
-    return {
-          date: row['Tanggal Pengambilan'] || '',
-          item_code: row['Kode Item'] || '',
-          item_name: row['Deskripsi'] || '',
-          machine: row['Mesin (Area)'] || '',
-          qty: parseInt(row['Qty']) || 0,
-          requester: row['Pemohon'] || '',
-          stock: parseInt(row[stockKey]) || 0,
-          cost_allocation: row['Cost Allocation'] || '',
-        };
-     });
-
-         console.log("PARSED:", rows);
-
-       resolve(rows);
-
+ 
+        // Bersihkan BOM di header key
+        const cleanedData = results.data.map(row => {
+          const cleanRow = {};
+          Object.keys(row).forEach(key => {
+            const cleanKey = key.replace(/^\uFEFF/, "").trim();
+            cleanRow[cleanKey] = row[key];
+          });
+          return cleanRow;
+        });
+ 
+        console.log("CLEANED:", cleanedData);
+ 
+        // Cari kolom Actual Stock secara dinamis
+        const sampleRow = cleanedData[0] || {};
+        const stockKey = Object.keys(sampleRow).find(k => k.includes('Actual Stock')) || '';
+ 
+        const rows = cleanedData.map(row => ({
+          date:            row['Tanggal Pengambilan'] || '',
+          item_code:       row['Kode Item']           || '',
+          item_name:       row['Deskripsi']            || '',
+          machine:         row['Mesin (Area)']         || '',
+          qty:             parseInt(row['Qty'])        || 0,
+          requester:       row['Pemohon']              || '',
+          stock:           parseInt(row[stockKey])     || 0,
+          cost_allocation: row['Cost Allocation']      || '',
+        }));
+ 
+        console.log("PARSED:", rows);
+        resolve(rows);   // ← satu-satunya resolve, di akhir complete
       },
-
+ 
       error: (err) => {
         console.error("CSV ERROR:", err);
         resolve([]);
-      }
-
+      },
     });
-
+ 
   });
 }
-
+ 
 function setDsStatus(id, ok) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -266,14 +256,14 @@ function setDsStatus(id, ok) {
     ? 'rgba(0,229,160,0.12)' : 'rgba(239,68,68,0.12)';
   el.style.color = ok ? 'var(--clr-green)' : 'var(--clr-red)';
 }
-
+ 
 // ===================== DATE FILTER =====================
-
+ 
 /** Apply date range filter to App.data.outgoing → App.data.filtered */
 function applyDateFilter() {
   const from = App.ui.filterFrom;
   const to   = App.ui.filterTo;
-
+ 
   App.data.filtered = App.data.outgoing.filter(row => {
     if (!row.date) return false;
     const d = parseDate(row.date);
@@ -282,18 +272,18 @@ function applyDateFilter() {
     if (to   && d > to)   return false;
     return true;
   });
-
+ 
   renderCurrentPage();
 }
-
+ 
 /** Set quick range */
 function setQuickRange(range) {
   const today = new Date();
   today.setHours(0,0,0,0);
-
+ 
   document.querySelectorAll('.qbtn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.qbtn[data-range="${range}"]`)?.classList.add('active');
-
+ 
   if (range === 'today') {
     App.ui.filterFrom = today;
     App.ui.filterTo   = today;
@@ -309,24 +299,24 @@ function setQuickRange(range) {
     App.ui.filterFrom = null;
     App.ui.filterTo   = null;
   }
-
+ 
   // Sync date inputs
   const fromEl = document.getElementById('filterDateFrom');
   const toEl   = document.getElementById('filterDateTo');
   if (fromEl) fromEl.value = App.ui.filterFrom ? App.ui.filterFrom.toISOString().split('T')[0] : '';
   if (toEl)   toEl.value   = App.ui.filterTo   ? App.ui.filterTo.toISOString().split('T')[0]   : '';
-
+ 
   applyDateFilter();
 }
-
+ 
 // ===================== KPI CALCULATION =====================
-
+ 
 function computeKPIs(data) {
   const today = todayStr();
   const todayRows = data.filter(r => r.date === today);
   const machines  = [...new Set(data.map(r => r.machine).filter(Boolean))];
   const requesters = [...new Set(data.map(r => r.requester).filter(Boolean))];
-
+ 
   return {
     totalData:      data.length,
     totalQty:       data.reduce((s, r) => s + (parseInt(r.qty) || 0), 0),
@@ -336,21 +326,21 @@ function computeKPIs(data) {
     activeRequesters: requesters.length,
   };
 }
-
+ 
 function renderKPIs(data) {
   const kpi = computeKPIs(data);
-
+ 
   animateCounter('kpiTotalData',      kpi.totalData);
   animateCounter('kpiTotalQty',       kpi.totalQty);
   animateCounter('kpiTodayQty',       kpi.todayQty);
   animateCounter('kpiTodayTrx',       kpi.todayTrx);
   animateCounter('kpiActiveMachine',  kpi.activeMachines);
   animateCounter('kpiActiveRequester', kpi.activeRequesters);
-
+ 
   const todayEl = document.getElementById('kpiTodayDate');
   if (todayEl) todayEl.textContent = todayStr();
 }
-
+ 
 /** Smooth counter animation */
 function animateCounter(id, target) {
   const el = document.getElementById(id);
@@ -358,7 +348,7 @@ function animateCounter(id, target) {
   const duration = 800;
   const start    = performance.now();
   const from     = parseInt(el.textContent.replace(/[^\d]/g, '')) || 0;
-
+ 
   function step(now) {
     const elapsed = now - start;
     const progress = Math.min(elapsed / duration, 1);
@@ -367,12 +357,12 @@ function animateCounter(id, target) {
     el.textContent = fmtNum(current);
     if (progress < 1) requestAnimationFrame(step);
   }
-
+ 
   requestAnimationFrame(step);
 }
-
+ 
 // ===================== CHARTS — DASHBOARD =====================
-
+ 
 /** Trend Chart: Qty per day for last 7 days */
 function renderTrendChart(data) {
   const dates  = lastNDates(7);
@@ -387,11 +377,11 @@ function renderTrendChart(data) {
   const trxs = dates.map(date =>
     data.filter(r => r.date === date).length
   );
-
+ 
   destroyChart('trend');
   const ctx = document.getElementById('trendChart');
   if (!ctx) return;
-
+ 
   App.charts.trend = new Chart(ctx, {
     type: 'line',
     data: {
@@ -452,22 +442,22 @@ function renderTrendChart(data) {
     },
   });
 }
-
+ 
 /** Machine Donut Chart */
 function renderMachineDonut(data) {
   const machineCounts = {};
   data.forEach(r => {
     if (r.machine) machineCounts[r.machine] = (machineCounts[r.machine] || 0) + 1;
   });
-
+ 
   const labels = Object.keys(machineCounts);
   const values = Object.values(machineCounts);
   const colors = gradColors(labels.length);
-
+ 
   destroyChart('machineDonut');
   const ctx = document.getElementById('machineDonutChart');
   if (!ctx) return;
-
+ 
   App.charts.machineDonut = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -499,15 +489,15 @@ function renderMachineDonut(data) {
     },
   });
 }
-
+ 
 // ===================== LOW STOCK ALERT =====================
-
+ 
 function renderLowStock(data) {
   const threshold = App.settings.lowStockThreshold;
   const container = document.getElementById('lowStockList');
   const countEl   = document.getElementById('lowStockCount');
   if (!container) return;
-
+ 
   // Get unique items with their latest stock value
   const itemMap = {};
   data.forEach(r => {
@@ -519,27 +509,27 @@ function renderLowStock(data) {
       };
     }
   });
-
+ 
   const lowItems = Object.values(itemMap)
     .filter(item => item.stock <= threshold * 3)
     .sort((a, b) => a.stock - b.stock)
     .slice(0, 10);
-
+ 
   if (countEl) countEl.textContent = lowItems.filter(i => i.stock <= threshold).length;
-
+ 
   if (lowItems.length === 0) {
     container.innerHTML = `<div style="text-align:center; color:var(--clr-text3); padding:20px; font-size:13px;">
       <i class="bi bi-check-circle-fill" style="color:var(--clr-green); font-size:24px;"></i><br>Tidak ada item low stock
     </div>`;
     return;
   }
-
+ 
   container.innerHTML = lowItems.map(item => {
     const pct = Math.min((item.stock / (threshold * 3)) * 100, 100);
     let level = 'low', badge = 'LOW';
     if (item.stock <= threshold * 0.5)  { level = 'critical'; badge = 'CRITICAL'; }
     else if (item.stock <= threshold)    { level = 'warning';  badge = 'WARNING'; }
-
+ 
     return `
       <div class="low-stock-item">
         <div class="ls-header">
@@ -559,25 +549,25 @@ function renderLowStock(data) {
     `;
   }).join('');
 }
-
+ 
 // ===================== RECENT TRANSACTIONS =====================
-
+ 
 function renderRecentTransactions(data) {
   const container = document.getElementById('recentTrxList');
   if (!container) return;
-
+ 
   const sorted = [...data].sort((a, b) => {
     const da = parseDate(a.date), db = parseDate(b.date);
     return (db || 0) - (da || 0);
   }).slice(0, 8);
-
+ 
   if (sorted.length === 0) {
     container.innerHTML = `<div style="text-align:center; color:var(--clr-text3); padding:20px; font-size:13px;">Tidak ada data transaksi</div>`;
     return;
   }
-
+ 
   const today = todayStr();
-
+ 
   container.innerHTML = sorted.map((row, idx) => {
     const isLatest = idx < 2;
     const isToday  = row.date === today;
@@ -598,9 +588,9 @@ function renderRecentTransactions(data) {
     `;
   }).join('');
 }
-
+ 
 // ===================== CHARTS — MACHINE PAGE =====================
-
+ 
 function renderMachinePage(data) {
   renderMachineKPIs(data);
   renderMachineBarChart(data);
@@ -608,11 +598,11 @@ function renderMachinePage(data) {
   renderMachineRankingTable(data);
   renderMachineTrendChart(data);
 }
-
+ 
 function renderMachineKPIs(data) {
   const container = document.getElementById('machineKpiRow');
   if (!container) return;
-
+ 
   const machineData = {};
   data.forEach(r => {
     if (!r.machine) return;
@@ -620,7 +610,7 @@ function renderMachineKPIs(data) {
     machineData[r.machine].trx++;
     machineData[r.machine].qty += parseInt(r.qty) || 0;
   });
-
+ 
   container.innerHTML = Object.entries(machineData)
     .sort((a, b) => b[1].trx - a[1].trx)
     .map(([machine, info]) => `
@@ -634,23 +624,23 @@ function renderMachineKPIs(data) {
       </div>
     `).join('');
 }
-
+ 
 function renderMachineBarChart(data) {
   const machineQty = {};
   data.forEach(r => {
     if (!r.machine) return;
     machineQty[r.machine] = (machineQty[r.machine] || 0) + (parseInt(r.qty) || 0);
   });
-
+ 
   const sorted = Object.entries(machineQty).sort((a, b) => b[1] - a[1]);
   const labels = sorted.map(e => e[0]);
   const values = sorted.map(e => e[1]);
   const colors = gradColors(labels.length);
-
+ 
   destroyChart('machineBar');
   const ctx = document.getElementById('machineBarChart');
   if (!ctx) return;
-
+ 
   App.charts.machineBar = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -679,7 +669,7 @@ function renderMachineBarChart(data) {
     },
   });
 }
-
+ 
 function renderMachineBreakdownChart(data) {
   // Frekuensi = jumlah transaksi per mesin (indikator kerusakan)
   const machineTrx = {};
@@ -687,7 +677,7 @@ function renderMachineBreakdownChart(data) {
     if (!r.machine) return;
     machineTrx[r.machine] = (machineTrx[r.machine] || 0) + 1;
   });
-
+ 
   const sorted = Object.entries(machineTrx).sort((a, b) => b[1] - a[1]);
   const labels = sorted.map(e => e[0]);
   const values = sorted.map(e => e[1]);
@@ -695,11 +685,11 @@ function renderMachineBreakdownChart(data) {
   const colors = values.map(v =>
     v >= max * 0.7 ? '#ef4444' : v >= max * 0.4 ? '#f59e0b' : '#00e5a0'
   );
-
+ 
   destroyChart('machineBreakdown');
   const ctx = document.getElementById('machineBreakdownChart');
   if (!ctx) return;
-
+ 
   App.charts.machineBreakdown = new Chart(ctx, {
     type: 'polarArea',
     data: {
@@ -724,11 +714,11 @@ function renderMachineBreakdownChart(data) {
     },
   });
 }
-
+ 
 function renderMachineRankingTable(data) {
   const tbody = document.getElementById('machineRankingBody');
   if (!tbody) return;
-
+ 
   const machineData = {};
   data.forEach(r => {
     if (!r.machine) return;
@@ -737,10 +727,10 @@ function renderMachineRankingTable(data) {
     machineData[r.machine].qty  += parseInt(r.qty) || 0;
     machineData[r.machine].items.add(r.item_code);
   });
-
+ 
   const sorted = Object.entries(machineData).sort((a, b) => b[1].trx - a[1].trx);
   const maxTrx = sorted[0]?.[1].trx || 1;
-
+ 
   tbody.innerHTML = sorted.map(([machine, info], i) => {
     const rank  = i + 1;
     const pct   = (info.trx / maxTrx) * 100;
@@ -749,7 +739,7 @@ function renderMachineRankingTable(data) {
       ? '<span class="status-badge pending"><i class="bi bi-exclamation-triangle-fill"></i> Perlu Perhatian</span>'
       : '<span class="status-badge completed"><i class="bi bi-check-circle-fill"></i> Normal</span>';
     const rankCls = rank <= 3 ? `rank-${rank}` : '';
-
+ 
     return `
       <tr class="${info.date === todayStr() ? 'row-latest' : ''}">
         <td class="${rankCls}">${rank <= 3 ? ['🥇','🥈','🥉'][rank-1] : rank}</td>
@@ -775,13 +765,13 @@ function renderMachineRankingTable(data) {
     `;
   }).join('');
 }
-
+ 
 function renderMachineTrendChart(data) {
   const dates   = lastNDates(7);
   const machines = [...new Set(data.map(r => r.machine).filter(Boolean))].slice(0, 5);
   const labels  = dates.map(d => { const p = d.split('/'); return `${p[0]}/${p[1]}`; });
   const colors  = gradColors(machines.length);
-
+ 
   const datasets = machines.map((m, i) => ({
     label: m,
     data: dates.map(date =>
@@ -794,11 +784,11 @@ function renderMachineTrendChart(data) {
     tension: 0.4,
     pointRadius: 4,
   }));
-
+ 
   destroyChart('machineTrend');
   const ctx = document.getElementById('machineTrendChart');
   if (!ctx) return;
-
+ 
   App.charts.machineTrend = new Chart(ctx, {
     type: 'line',
     data: { labels, datasets },
@@ -816,9 +806,9 @@ function renderMachineTrendChart(data) {
     },
   });
 }
-
+ 
 // ===================== CHARTS — ANALYTIC PAGE =====================
-
+ 
 function renderAnalyticPage(data) {
   renderTop10Chart(data);
   renderRequesterChart(data);
@@ -827,7 +817,7 @@ function renderAnalyticPage(data) {
   renderMachineBreakdownAnalytic(data);
   renderSparepartPerMachine(data);
 }
-
+ 
 /** Top 10 items by frequency (transaction count) */
 function renderTop10Chart(data) {
   const itemCounts = {};
@@ -839,19 +829,19 @@ function renderTop10Chart(data) {
       itemCounts[key].qty += parseInt(r.qty) || 0;
     }
   });
-
+ 
   const top10 = Object.values(itemCounts)
     .sort((a, b) => b.qty - a.qty)
     .slice(0, 10);
-
+ 
   const labels = top10.map(i => i.name.length > 20 ? i.name.substring(0, 18) + '…' : i.name);
   const values = top10.map(i => i.qty);
   const colors = gradColors(10);
-
+ 
   destroyChart('top10');
   const ctx = document.getElementById('top10Chart');
   if (!ctx) return;
-
+ 
   App.charts.top10 = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -881,7 +871,7 @@ function renderTop10Chart(data) {
     },
   });
 }
-
+ 
 function renderRequesterChart(data) {
   const reqMap = {};
   data.forEach(r => {
@@ -889,16 +879,16 @@ function renderRequesterChart(data) {
       reqMap[r.requester] = (reqMap[r.requester] || 0) + 1;
     }
   });
-
+ 
   const sorted = Object.entries(reqMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const labels = sorted.map(e => e[0].split(' ')[0]);
   const values = sorted.map(e => e[1]);
   const colors = gradColors(labels.length);
-
+ 
   destroyChart('requester');
   const ctx = document.getElementById('requesterChart');
   if (!ctx) return;
-
+ 
   App.charts.requester = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -922,7 +912,7 @@ function renderRequesterChart(data) {
     },
   });
 }
-
+ 
 function renderCostAllocChart(data) {
   const costMap = {};
   data.forEach(r => {
@@ -930,16 +920,16 @@ function renderCostAllocChart(data) {
       costMap[r.cost_allocation] = (costMap[r.cost_allocation] || 0) + 1;
     }
   });
-
+ 
   const sorted = Object.entries(costMap).sort((a, b) => b[1] - a[1]);
   const labels = sorted.map(e => e[0]);
   const values = sorted.map(e => e[1]);
   const colors = ['#1e90ff','#00e5a0','#a855f7','#f59e0b','#ef4444'];
-
+ 
   destroyChart('costAlloc');
   const ctx = document.getElementById('costAllocChart');
   if (!ctx) return;
-
+ 
   App.charts.costAlloc = new Chart(ctx, {
     type: 'pie',
     data: {
@@ -962,19 +952,19 @@ function renderCostAllocChart(data) {
     },
   });
 }
-
+ 
 function renderItemTrendChart(data) {
   // Top 5 items by qty, trend over 7 days
   const itemQty = {};
   data.forEach(r => {
     if (r.item_name) itemQty[r.item_name] = (itemQty[r.item_name] || 0) + (parseInt(r.qty) || 0);
   });
-
+ 
   const top5 = Object.entries(itemQty).sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => e[0]);
   const dates = lastNDates(7);
   const labels = dates.map(d => { const p = d.split('/'); return `${p[0]}/${p[1]}`; });
   const colors = gradColors(5);
-
+ 
   const datasets = top5.map((item, i) => ({
     label: item.length > 18 ? item.substring(0, 16) + '…' : item,
     data: dates.map(date =>
@@ -988,11 +978,11 @@ function renderItemTrendChart(data) {
     fill: false,
     pointRadius: 3,
   }));
-
+ 
   destroyChart('itemTrend');
   const ctx = document.getElementById('itemTrendChart');
   if (!ctx) return;
-
+ 
   App.charts.itemTrend = new Chart(ctx, {
     type: 'line',
     data: { labels, datasets },
@@ -1010,14 +1000,14 @@ function renderItemTrendChart(data) {
     },
   });
 }
-
+ 
 function renderMachineBreakdownAnalytic(data) {
   const machineTrx = {};
   data.forEach(r => {
     if (!r.machine) return;
     machineTrx[r.machine] = (machineTrx[r.machine] || 0) + 1;
   });
-
+ 
   const sorted = Object.entries(machineTrx).sort((a, b) => b[1] - a[1]);
   const labels = sorted.map(e => e[0]);
   const values = sorted.map(e => e[1]);
@@ -1025,11 +1015,11 @@ function renderMachineBreakdownAnalytic(data) {
   const colors = values.map(v =>
     v >= max * 0.7 ? '#ef4444' : v >= max * 0.4 ? '#f59e0b' : '#00e5a0'
   );
-
+ 
   destroyChart('machineBreakdownAnalytic');
   const ctx = document.getElementById('machineBreakdownAnalytic');
   if (!ctx) return;
-
+ 
   App.charts.machineBreakdownAnalytic = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -1069,18 +1059,18 @@ function renderMachineBreakdownAnalytic(data) {
     },
   });
 }
-
+ 
 function renderSparepartPerMachine(data) {
   const container = document.getElementById('sparepartPerMachine');
   if (!container) return;
-
+ 
   const machineItems = {};
   data.forEach(r => {
     if (!r.machine || !r.item_name) return;
     if (!machineItems[r.machine]) machineItems[r.machine] = {};
     machineItems[r.machine][r.item_name] = (machineItems[r.machine][r.item_name] || 0) + 1;
   });
-
+ 
   container.innerHTML = Object.entries(machineItems)
     .sort((a, b) => Object.keys(b[1]).length - Object.keys(a[1]).length)
     .map(([machine, items]) => {
@@ -1107,19 +1097,19 @@ function renderSparepartPerMachine(data) {
       `;
     }).join('');
 }
-
+ 
 // ===================== TRANSACTION TABLE =====================
-
+ 
 /** Render transaction monitoring page */
 function renderTransactionPage() {
   const data      = App.data.outgoing;
   const search    = (document.getElementById('trxSearch')?.value || '').toLowerCase();
   const machine   = document.getElementById('trxFilterMachine')?.value   || '';
   const requester = document.getElementById('trxFilterRequester')?.value || '';
-
+ 
   // Populate filter dropdowns (once)
   populateFilterDropdowns(data);
-
+ 
   // Filter rows
   let rows = data.filter(r => {
     if (machine   && r.machine !== machine)     return false;
@@ -1131,7 +1121,7 @@ function renderTransactionPage() {
     }
     return true;
   });
-
+ 
   // Sort
   const col = App.ui.trxSortCol;
   const dir = App.ui.trxSortDir;
@@ -1143,25 +1133,25 @@ function renderTransactionPage() {
     if (va > vb) return dir === 'asc' ?  1 : -1;
     return 0;
   });
-
+ 
   const total    = rows.length;
   const pageSize = App.ui.trxPageSize;
   const pages    = Math.ceil(total / pageSize) || 1;
   let   page     = Math.min(App.ui.currentTrxPage, pages);
   App.ui.currentTrxPage = page;
-
+ 
   const startIdx = (page - 1) * pageSize;
   const pageRows = rows.slice(startIdx, startIdx + pageSize);
-
+ 
   // Update row count
   const countEl = document.getElementById('trxRowCount');
   if (countEl) countEl.textContent = `${fmtNum(total)} data`;
-
+ 
   // Render table body
   const today = todayStr();
   const tbody = document.getElementById('trxTableBody');
   if (!tbody) return;
-
+ 
   if (pageRows.length === 0) {
     tbody.innerHTML = `
       <tr><td colspan="8" style="text-align:center; color:var(--clr-text3); padding:30px">
@@ -1175,7 +1165,7 @@ function renderTransactionPage() {
       const status = isToday
         ? '<span class="status-badge today"><i class="bi bi-circle-fill" style="font-size:7px"></i> Today</span>'
         : '<span class="status-badge completed"><i class="bi bi-check-circle-fill" style="font-size:9px"></i> Done</span>';
-
+ 
       return `
         <tr class="${isLatest ? 'row-latest' : ''}">
           <td style="white-space:nowrap; color:var(--clr-text2); font-size:12px">${row.date || '-'}</td>
@@ -1196,15 +1186,15 @@ function renderTransactionPage() {
       `;
     }).join('');
   }
-
+ 
   renderPagination(total, page, pageSize, pages);
   App.trxFilteredData = rows; // Store for export
 }
-
+ 
 function populateFilterDropdowns(data) {
   const mEl = document.getElementById('trxFilterMachine');
   const rEl = document.getElementById('trxFilterRequester');
-
+ 
   if (mEl && mEl.options.length <= 1) {
     const machines = [...new Set(data.map(r => r.machine).filter(Boolean))].sort();
     machines.forEach(m => {
@@ -1213,7 +1203,7 @@ function populateFilterDropdowns(data) {
       mEl.appendChild(opt);
     });
   }
-
+ 
   if (rEl && rEl.options.length <= 1) {
     const reqs = [...new Set(data.map(r => r.requester).filter(Boolean))].sort();
     reqs.forEach(r => {
@@ -1223,68 +1213,68 @@ function populateFilterDropdowns(data) {
     });
   }
 }
-
+ 
 function renderPagination(total, page, pageSize, pages) {
   const info = document.getElementById('paginationInfo');
   const ctrl = document.getElementById('paginationControls');
   if (!info || !ctrl) return;
-
+ 
   const from = total > 0 ? (page - 1) * pageSize + 1 : 0;
   const to   = Math.min(page * pageSize, total);
   info.textContent = `Menampilkan ${fmtNum(from)}-${fmtNum(to)} dari ${fmtNum(total)}`;
-
+ 
   const maxButtons = 7;
   let startPage = Math.max(1, page - 3);
   let endPage   = Math.min(pages, startPage + maxButtons - 1);
   if (endPage - startPage < maxButtons - 1) startPage = Math.max(1, endPage - maxButtons + 1);
-
+ 
   let html = `
     <button class="page-btn" onclick="goToPage(${page - 1})" ${page <= 1 ? 'disabled' : ''}>
       <i class="bi bi-chevron-left"></i>
     </button>
   `;
-
+ 
   if (startPage > 1) {
     html += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
     if (startPage > 2) html += `<button class="page-btn" disabled>…</button>`;
   }
-
+ 
   for (let p = startPage; p <= endPage; p++) {
     html += `<button class="page-btn ${p === page ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
   }
-
+ 
   if (endPage < pages) {
     if (endPage < pages - 1) html += `<button class="page-btn" disabled>…</button>`;
     html += `<button class="page-btn" onclick="goToPage(${pages})">${pages}</button>`;
   }
-
+ 
   html += `
     <button class="page-btn" onclick="goToPage(${page + 1})" ${page >= pages ? 'disabled' : ''}>
       <i class="bi bi-chevron-right"></i>
     </button>
   `;
-
+ 
   ctrl.innerHTML = html;
 }
-
+ 
 window.goToPage = function(p) {
   App.ui.currentTrxPage = p;
   renderTransactionPage();
 };
-
+ 
 // ===================== EXPORT EXCEL (CSV) =====================
-
+ 
 function exportToExcel() {
   const rows = App.trxFilteredData || App.data.outgoing;
   if (!rows || rows.length === 0) return;
-
+ 
   const headers = ['date','item_code','item_name','qty','requester','machine','cost_allocation','stock'];
   const csvRows = [headers.join(',')];
-
+ 
   rows.forEach(r => {
     csvRows.push(headers.map(h => `"${(r[h] || '').toString().replace(/"/g, '""')}"`).join(','));
   });
-
+ 
   const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -1293,9 +1283,9 @@ function exportToExcel() {
   a.click();
   URL.revokeObjectURL(url);
 }
-
+ 
 // ===================== SORTING =====================
-
+ 
 function initSortableTable() {
   document.querySelectorAll('.sortable-table th.sortable').forEach(th => {
     th.addEventListener('click', () => {
@@ -1306,34 +1296,34 @@ function initSortableTable() {
         App.ui.trxSortCol = col;
         App.ui.trxSortDir = 'asc';
       }
-
+ 
       // Update header classes
       document.querySelectorAll('.sortable-table th.sortable').forEach(t => {
         t.classList.remove('sort-asc','sort-desc');
       });
       th.classList.add(App.ui.trxSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
-
+ 
       App.ui.currentTrxPage = 1;
       renderTransactionPage();
     });
   });
 }
-
+ 
 // ===================== PAGE NAVIGATION =====================
-
+ 
 function navigateTo(page) {
   // Hide all pages
   document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
-
+ 
   // Show target page
   const target = document.getElementById(`page-${page}`);
   if (target) target.classList.remove('hidden');
-
+ 
   // Update sidebar active state
   document.querySelectorAll('.nav-item').forEach(n => {
     n.classList.toggle('active', n.dataset.page === page);
   });
-
+ 
   // Update breadcrumb
   const titles = {
     dashboard:   'Dashboard Overview',
@@ -1349,21 +1339,21 @@ function navigateTo(page) {
     transaction: 'bi-table',
     setting:     'bi-sliders2',
   };
-
+ 
   const titleEl = document.getElementById('pageTitle');
   const iconEl  = document.querySelector('.breadcrumb-icon i');
   if (titleEl) titleEl.textContent = titles[page] || page;
   if (iconEl)  { iconEl.className = 'bi ' + (icons[page] || 'bi-grid'); }
-
+ 
   App.ui.currentPage = page;
-
+ 
   // Render page-specific content
   renderCurrentPage();
-
+ 
   // Close mobile sidebar
   document.getElementById('sidebar')?.classList.remove('mobile-open');
 }
-
+ 
 function renderCurrentPage() {
   const data = App.data.filtered;
   switch (App.ui.currentPage) {
@@ -1385,15 +1375,15 @@ function renderCurrentPage() {
       break;
   }
 }
-
+ 
 // ===================== SIDEBAR TOGGLE =====================
-
+ 
 function initSidebar() {
   const sidebar     = document.getElementById('sidebar');
   const mainArea    = document.getElementById('mainArea');
   const toggleBtn   = document.getElementById('sidebarToggle');
   const mobileBtn   = document.getElementById('mobileMenuBtn');
-
+ 
   toggleBtn?.addEventListener('click', () => {
     App.ui.sidebarCollapsed = !App.ui.sidebarCollapsed;
     sidebar.classList.toggle('collapsed', App.ui.sidebarCollapsed);
@@ -1403,11 +1393,11 @@ function initSidebar() {
       Object.values(App.charts).forEach(c => c.resize?.());
     }, 380);
   });
-
+ 
   mobileBtn?.addEventListener('click', () => {
     sidebar.classList.toggle('mobile-open');
   });
-
+ 
   // Close sidebar on outside click (mobile)
   document.addEventListener('click', (e) => {
     if (window.innerWidth <= 768) {
@@ -1417,9 +1407,9 @@ function initSidebar() {
     }
   });
 }
-
+ 
 // ===================== NAV ITEMS =====================
-
+ 
 function initNavItems() {
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', (e) => {
@@ -1428,7 +1418,7 @@ function initNavItems() {
       if (page) navigateTo(page);
     });
   });
-
+ 
   // View all link in recent transactions
   document.querySelectorAll('.view-all-link').forEach(link => {
     link.addEventListener('click', e => {
@@ -1437,15 +1427,15 @@ function initNavItems() {
     });
   });
 }
-
+ 
 // ===================== FILTER CONTROLS =====================
-
+ 
 function initFilterControls() {
   // Quick filter buttons
   document.querySelectorAll('.qbtn').forEach(btn => {
     btn.addEventListener('click', () => setQuickRange(btn.dataset.range));
   });
-
+ 
   // Apply filter button
   document.getElementById('applyFilter')?.addEventListener('click', () => {
     const fromVal = document.getElementById('filterDateFrom')?.value;
@@ -1454,7 +1444,7 @@ function initFilterControls() {
     App.ui.filterTo   = toVal   ? new Date(toVal)   : null;
     applyDateFilter();
   });
-
+ 
   // Reset filter
   document.getElementById('resetFilter')?.addEventListener('click', () => {
     App.ui.filterFrom = null;
@@ -1467,61 +1457,61 @@ function initFilterControls() {
     renderCurrentPage();
   });
 }
-
+ 
 // ===================== TRANSACTION SEARCH/FILTER =====================
-
+ 
 function initTransactionControls() {
   document.getElementById('trxSearch')?.addEventListener('input', () => {
     App.ui.currentTrxPage = 1;
     renderTransactionPage();
   });
-
+ 
   document.getElementById('trxFilterMachine')?.addEventListener('change', () => {
     App.ui.currentTrxPage = 1;
     renderTransactionPage();
   });
-
+ 
   document.getElementById('trxFilterRequester')?.addEventListener('change', () => {
     App.ui.currentTrxPage = 1;
     renderTransactionPage();
   });
-
+ 
   document.getElementById('pageSize')?.addEventListener('change', (e) => {
     App.ui.trxPageSize    = parseInt(e.target.value);
     App.ui.currentTrxPage = 1;
     renderTransactionPage();
   });
-
+ 
   document.getElementById('exportExcel')?.addEventListener('click', exportToExcel);
 }
-
+ 
 // ===================== DARK MODE =====================
-
+ 
 function initDarkMode() {
   const btn       = document.getElementById('darkmodeBtn');
   const icon      = document.getElementById('darkmodeIcon');
   const settingCb = document.getElementById('darkModeToggleSetting');
-
+ 
   function apply(dark) {
     document.body.classList.toggle('light-mode', !dark);
     App.settings.darkMode = dark;
     if (icon) icon.className = dark ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill';
     if (settingCb) settingCb.checked = dark;
   }
-
+ 
   btn?.addEventListener('click', () => apply(!App.settings.darkMode));
   settingCb?.addEventListener('change', (e) => apply(e.target.checked));
-
+ 
   apply(true); // Start in dark mode
 }
-
+ 
 // ===================== SETTINGS PAGE =====================
-
+ 
 function initSettings() {
   // Auto refresh toggle
   const autoRefreshToggle = document.getElementById('autoRefreshToggle');
   const refreshIntervalEl = document.getElementById('refreshInterval');
-
+ 
   autoRefreshToggle?.addEventListener('change', (e) => {
     App.settings.autoRefresh = e.target.checked;
     if (e.target.checked) {
@@ -1530,7 +1520,7 @@ function initSettings() {
       clearInterval(App.intervals.refresh);
     }
   });
-
+ 
   refreshIntervalEl?.addEventListener('change', (e) => {
     App.settings.refreshInterval = parseInt(e.target.value);
     if (App.settings.autoRefresh) {
@@ -1538,7 +1528,7 @@ function initSettings() {
       startAutoRefresh();
     }
   });
-
+ 
   // Low stock threshold
   document.getElementById('saveLowStock')?.addEventListener('click', () => {
     const val = parseInt(document.getElementById('lowStockThreshold')?.value || '10');
@@ -1554,42 +1544,42 @@ function initSettings() {
       btn.style.background = '';
     }, 2000);
   });
-
+ 
   // Sync dark mode toggle in settings
   const darkSettingToggle = document.getElementById('darkModeToggleSetting');
   darkSettingToggle?.addEventListener('change', (e) => {
     document.getElementById('darkmodeBtn')?.click();
   });
 }
-
+ 
 // ===================== AUTO REFRESH =====================
-
+ 
 function startAutoRefresh() {
   clearInterval(App.intervals.refresh);
   if (!App.settings.autoRefresh) return;
-
+ 
   App.intervals.refresh = setInterval(async () => {
     const icon = document.getElementById('refreshIcon');
     if (icon) icon.classList.add('spinning');
-
+ 
     await loadAllData();
     applyDateFilter();
-
+ 
     setTimeout(() => {
       if (icon) icon.classList.remove('spinning');
     }, 1000);
   }, App.settings.refreshInterval);
 }
-
+ 
 // ===================== MAIN INIT =====================
-
+ 
 async function init() {
   // 1. Start loading animation
   runLoadingSequence();
-
+ 
   // 2. Start realtime clock immediately
   startClock();
-
+ 
   // 3. Init UI components
   initSidebar();
   initNavItems();
@@ -1598,10 +1588,10 @@ async function init() {
   initTransactionControls();
   initSortableTable();
   initSettings();
-
+ 
   // 4. Load CSV data
   await loadAllData();
-
+ 
   // 5. Initial render after loading completes
   setTimeout(() => {
     App.data.filtered = [...App.data.outgoing];
@@ -1609,6 +1599,7 @@ async function init() {
     startAutoRefresh();
   }, 2400); // Sync with loading animation
 }
-
+ 
 // ===================== BOOT =====================
 document.addEventListener('DOMContentLoaded', init);
+ 
