@@ -200,9 +200,13 @@ function loadCSV(path) {
       download: true,
       header: true,
       skipEmptyLines: true,
-      delimiter: ";",
-
-complete: (results) => {
+      delimiter: ",",
+      
+      complete: (results) => {
+        console.log("FIELDS:", results.meta.fields);
+        console.log("RAW:", results.data);
+      }
+    } };
 
   console.log("RAW CSV:", results);
 
@@ -234,7 +238,7 @@ complete: (results) => {
           qty: parseInt(row['Qty']) || 0,
           requester: row['Pemohon'] || '',
           stock: parseInt(row[stockKey]) || 0,
-          cost_allocation: row['Cost Alocation'] || '',
+          cost_allocation: row['Cost Allocation'] || '',
         };
      });
 
