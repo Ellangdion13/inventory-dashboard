@@ -32,73 +32,47 @@
     <div class="login-bg-ring r3"></div>
   </div>
 
-  <div class="login-container">
-
-      <!-- Quick Login Section -->
-      <div class="quick-login-section">
-        <div class="quick-login-label">
-          <i class="bi bi-lightning-fill"></i>
-          Login Cepat sebagai User
-        </div>
-        <div class="quick-login-grid" id="quickLoginGrid">
-          <!-- Diisi oleh JS dari USERS array -->
-        </div>
-        <div class="quick-login-note">
-          <i class="bi bi-info-circle"></i>
-          Klik nama untuk login langsung sebagai user
-        </div>
-      </div>
-
-      <div class="login-panel-footer">v2.1.0 · BT-KCH Inventory Monitoring</div>
+  <!-- Single centered card -->
+  <div class="login-card">
+    <div class="login-form-header">
+      <div class="login-form-icon"><i class="bi bi-shield-lock-fill"></i></div>
+      <div class="login-form-title">Login Admin</div>
+      <div class="login-form-sub">Masukkan kredensial untuk akses penuh</div>
     </div>
 
-    <!-- RIGHT PANEL: Admin Login Form -->
-    <div class="login-panel-right">
-      <div class="login-form-header">
-        <div class="login-form-icon"><i class="bi bi-shield-lock-fill"></i></div>
-        <div class="login-form-title">Login Admin</div>
-        <div class="login-form-sub">Masukkan kredensial untuk akses penuh</div>
-      </div>
-
-      <div class="login-form">
-        <div class="login-field">
-          <label>Username</label>
-          <div class="login-input-wrap">
-            <i class="bi bi-person-fill"></i>
-            <input type="text" id="loginUsername" placeholder="Username" autocomplete="off" />
-          </div>
+    <div class="login-form">
+      <div class="login-field">
+        <label>Username</label>
+        <div class="login-input-wrap">
+          <i class="bi bi-person-fill"></i>
+          <input type="text" id="loginUsername" placeholder="Username" autocomplete="off" />
         </div>
-        <div class="login-field">
-          <label>Password</label>
-          <div class="login-input-wrap">
-            <i class="bi bi-lock-fill"></i>
-            <input type="password" id="loginPassword" placeholder="Password" />
-            <button class="toggle-pw-btn" id="togglePwBtn" type="button" tabindex="-1">
-              <i class="bi bi-eye-fill" id="togglePwIcon"></i>
-            </button>
-          </div>
+      </div>
+      <div class="login-field">
+        <label>Password</label>
+        <div class="login-input-wrap">
+          <i class="bi bi-lock-fill"></i>
+          <input type="password" id="loginPassword" placeholder="Password" />
+          <button class="toggle-pw-btn" id="togglePwBtn" type="button" tabindex="-1">
+            <i class="bi bi-eye-fill" id="togglePwIcon"></i>
+          </button>
         </div>
-        <div class="login-error" id="loginError"></div>
-        <button class="login-btn" id="loginBtn">
-          <i class="bi bi-box-arrow-in-right"></i> Masuk sebagai Admin
-        </button>
       </div>
+      <div class="login-error" id="loginError"></div>
+      <button class="login-btn" id="loginBtn">
+        <i class="bi bi-box-arrow-in-right"></i> Masuk sebagai Admin
+      </button>
+    </div>
 
-      <div class="login-divider">
-        <span>atau</span>
-      </div>
+    <div class="login-divider">
+      <span>atau</span>
+    </div>
 
-      <div class="login-alt-note">
-        Bukan admin? Gunakan <strong>Login Cepat</strong> di tombol bawah
-      </div>
+    <div class="login-alt-note">
+      Bukan admin? Gunakan <strong>Login Cepat</strong> di panel kiri
+    </div>
 
-      <div class="login-user-wrap">
-        <button id="btnUserLogin" class="btn-user-login">
-        <i class="bi bi-person-fill"></i>
-        Login User
-        </button>
-      </div>
-
+    <div class="login-panel-footer">v2.1.0 · BT-KCH Inventory Monitoring</div>
   </div>
 </div>
 
