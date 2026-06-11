@@ -38,7 +38,12 @@ const App = {
 const AUTH_KEY = 'btkch_auth_session';
 
 const USERS = [
-  { username: 'admin',    password: 'admin123',  role: 'admin', name: 'Admin Sparepart', dept: 'Sparepart' }
+  { username: 'admin',    password: 'admin123',  role: 'admin', name: 'Admin Sparepart', dept: 'Maintenance' },
+  { username: 'mra',      password: 'mra123',    role: 'user',  name: 'MRA',             dept: 'Produksi' },
+  { username: 'sigit',    password: 'sigit123',  role: 'user',  name: 'SIGIT',           dept: 'Utility' },
+  { username: 'twn',      password: 'twn123',    role: 'user',  name: 'TWN',             dept: 'Produksi' },
+  { username: 'nasikin',  password: 'nasikin123',role: 'user',  name: 'NASIKIN',         dept: 'Produksi' },
+  { username: 'ardifan',  password: 'ardifan123',role: 'user',  name: 'Ardifan',         dept: 'Produksi' },
 ];
 
 const PERMISSIONS = {
@@ -110,16 +115,56 @@ function initLogin() {
   const togglePwBtn = document.getElementById('togglePwBtn');
   const togglePwIcon= document.getElementById('togglePwIcon');
 
+  // ── Build quick login buttons dari USERS (role=user saja) ──
+  const quickGrid = document.getElementById('quickLoginGrid');
+  if (quickGrid) {
+    const userList = USERS.filter(u => u.role === 'user');
+    quickGrid.innerHTML = userList.map(u => `
+      <button class="quick-login-btn" data-username="${u.username}" data-password="${u.password}">
+        <div class="qlb-avatar">${u.name.charAt(0).toUpperCase()}</div>
+        <div class="qlb-info">
+          <div class="qlb-name">${u.name}</div>
+          <div class="qlb-dept">${u.dept}</div>
+        </div>
+        <i class="bi bi-arrow-right-circle-fill qlb-arrow"></i>
+      </button>
+    `).join('');
+
+    // Attach click handlers untuk quick login
+    quickGrid.querySelectorAll('.quick-login-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const u = btn.dataset.username;
+        const p = btn.dataset.password;
+
+        // Animasi: loading state
+        btn.classList.add('loading');
+        btn.querySelector('.qlb-arrow').className = 'bi bi-arrow-repeat qlb-arrow spinning';
+
+        setTimeout(() => {
+          if (login(u, p)) {
+            hideLoginScreen();
+            startApp();
+          }
+        }, 400);
+      });
+    });
+  }
+
+  // ── Toggle password visibility ──
   togglePwBtn?.addEventListener('click', () => {
     const isText = passwordEl.type === 'text';
     passwordEl.type = isText ? 'password' : 'text';
     if (togglePwIcon) togglePwIcon.className = isText ? 'bi bi-eye-fill' : 'bi bi-eye-slash-fill';
   });
 
+  // ── Admin login form ──
   function doLogin() {
     const u = (usernameEl?.value || '').trim();
     const p = passwordEl?.value || '';
-    if (!u || !p) { if (errorEl) errorEl.textContent = 'Username dan password wajib diisi.'; return; }
+    if (!u || !p) {
+      if (errorEl) errorEl.textContent = 'Username dan password wajib diisi.';
+      return;
+    }
     if (login(u, p)) {
       if (errorEl) errorEl.textContent = '';
       hideLoginScreen();
@@ -127,6 +172,10 @@ function initLogin() {
     } else {
       if (errorEl) errorEl.textContent = 'Username atau password salah.';
       if (passwordEl) { passwordEl.value = ''; passwordEl.focus(); }
+      // Shake animation
+      const card = document.querySelector('.login-panel-right');
+      card?.classList.add('shake');
+      setTimeout(() => card?.classList.remove('shake'), 500);
     }
   }
 
