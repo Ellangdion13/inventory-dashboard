@@ -39,11 +39,7 @@ const AUTH_KEY = 'btkch_auth_session';
 
 const USERS = [
   { username: 'admin',    password: 'admin123',  role: 'admin', name: 'Admin Sparepart', dept: 'Maintenance' },
-  { username: 'mra',      password: 'mra123',    role: 'user',  name: 'MRA',             dept: 'Produksi' },
-  { username: 'sigit',    password: 'sigit123',  role: 'user',  name: 'SIGIT',           dept: 'Utility' },
-  { username: 'twn',      password: 'twn123',    role: 'user',  name: 'TWN',             dept: 'Produksi' },
-  { username: 'nasikin',  password: 'nasikin123',role: 'user',  name: 'NASIKIN',         dept: 'Produksi' },
-  { username: 'ardifan',  password: 'ardifan123',role: 'user',  name: 'Ardifan',         dept: 'Produksi' },
+  { username: 'user',      password: 'user123',    role: 'user',  name: 'USER',             dept: 'General' },
 ];
 
 const PERMISSIONS = {
