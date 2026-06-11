@@ -22,6 +22,42 @@
 </head>
 <body>
 
+<!-- ===================== LOGIN SCREEN ===================== -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-ring"></div>
+      <div class="login-logo-icon"><i class="bi bi-box-seam-fill"></i></div>
+    </div>
+    <div class="login-title">BT-KCH Inventory</div>
+    <div class="login-sub">Kalbe Consumer Health</div>
+    <div class="login-form">
+      <div class="login-field">
+        <label>Username</label>
+        <div class="login-input-wrap">
+          <i class="bi bi-person-fill"></i>
+          <input type="text" id="loginUsername" placeholder="Masukkan username" autocomplete="off" />
+        </div>
+      </div>
+      <div class="login-field">
+        <label>Password</label>
+        <div class="login-input-wrap">
+          <i class="bi bi-lock-fill"></i>
+          <input type="password" id="loginPassword" placeholder="Masukkan password" />
+          <button class="toggle-pw-btn" id="togglePwBtn" type="button" tabindex="-1">
+            <i class="bi bi-eye-fill" id="togglePwIcon"></i>
+          </button>
+        </div>
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button class="login-btn" id="loginBtn">
+        <i class="bi bi-box-arrow-in-right"></i> Masuk
+      </button>
+    </div>
+    <div class="login-footer">Sistem Monitoring Inventory v2.1.0</div>
+  </div>
+</div>
+
 <!-- ===================== LOADING SCREEN ===================== -->
 <div id="loadingScreen" class="loading-screen">
   <div class="loading-content">
@@ -72,11 +108,27 @@
         <div class="nav-indicator"></div>
       </a>
 
-      <a href="#" class="nav-item" data-page="machine">
+      <!-- Machine nav with collapsible sub-groups -->
+      <a href="#" class="nav-item nav-item-parent" data-page="machine" id="machineNavItem">
         <div class="nav-icon"><i class="bi bi-gear-wide-connected"></i></div>
         <span class="nav-label">Machine</span>
+        <i class="bi bi-chevron-down nav-chevron" id="machineChevron"></i>
         <div class="nav-indicator"></div>
       </a>
+      <div class="nav-sub-group" id="machineSubGroup">
+        <a href="#" class="nav-sub-item" data-machine-group="ILAPAK"><i class="bi bi-cpu"></i> ILAPAK</a>
+        <a href="#" class="nav-sub-item" data-machine-group="SIG"><i class="bi bi-cpu"></i> SIG</a>
+        <a href="#" class="nav-sub-item" data-machine-group="UNIFIL"><i class="bi bi-cpu"></i> UNIFIL</a>
+        <a href="#" class="nav-sub-item" data-machine-group="CHIMEI"><i class="bi bi-cpu"></i> CHIMEI</a>
+        <a href="#" class="nav-sub-item" data-machine-group="JINSUG"><i class="bi bi-cpu"></i> JINSUG</a>
+        <a href="#" class="nav-sub-item" data-machine-group="FBD"><i class="bi bi-cpu"></i> FBD</a>
+        <a href="#" class="nav-sub-item" data-machine-group="STORAGE TANK"><i class="bi bi-cpu"></i> Storage Tank</a>
+        <a href="#" class="nav-sub-item" data-machine-group="BOILER"><i class="bi bi-cpu"></i> Boiler</a>
+        <a href="#" class="nav-sub-item" data-machine-group="CHILLER"><i class="bi bi-cpu"></i> Chiller</a>
+        <a href="#" class="nav-sub-item" data-machine-group="KOMPRESOR"><i class="bi bi-cpu"></i> Kompresor</a>
+        <a href="#" class="nav-sub-item" data-machine-group="AHU"><i class="bi bi-cpu"></i> AHU</a>
+        <a href="#" class="nav-sub-item" data-machine-group="ALL"><i class="bi bi-grid-3x3-gap"></i> Semua Mesin</a>
+      </div>
 
       <a href="#" class="nav-item" data-page="analytic">
         <div class="nav-icon"><i class="bi bi-bar-chart-line-fill"></i></div>
@@ -93,7 +145,7 @@
 
       <div class="nav-section-label">SYSTEM</div>
 
-      <a href="#" class="nav-item" data-page="setting">
+      <a href="#" class="nav-item admin-only" data-page="setting" id="settingNavItem">
         <div class="nav-icon"><i class="bi bi-sliders2"></i></div>
         <span class="nav-label">Setting</span>
         <div class="nav-indicator"></div>
@@ -106,7 +158,12 @@
         <div class="status-dot pulse-green"></div>
         <span>System Online</span>
       </div>
-      <div class="sidebar-version">v2.1.0</div>
+      <div class="sidebar-footer-right">
+        <div class="sidebar-version">v2.1.0</div>
+        <button class="logout-btn" id="logoutBtn" title="Logout">
+          <i class="bi bi-box-arrow-right"></i>
+        </button>
+      </div>
     </div>
   </aside>
 
@@ -162,12 +219,12 @@
 
         <!-- User Profile -->
         <div class="user-profile">
-          <div class="user-avatar">
+          <div class="user-avatar" id="userAvatar">
             <i class="bi bi-person-fill"></i>
           </div>
           <div class="user-info">
-            <span class="user-name">Admin User</span>
-            <span class="user-role">Inventory Manager</span>
+            <span class="user-name" id="topnavUserName">Admin User</span>
+            <span class="user-role" id="topnavUserRole">Inventory Manager</span>
           </div>
         </div>
       </div>
@@ -363,6 +420,30 @@
         <div class="page-header-block">
           <h2 class="page-h2"><i class="bi bi-gear-wide-connected"></i> Machine Distribution</h2>
           <p class="page-desc">Monitoring distribusi penggunaan sparepart per mesin</p>
+        </div>
+
+        <!-- Machine Group Filter -->
+        <div class="machine-group-filter glass-card">
+          <div class="mgf-label"><i class="bi bi-funnel-fill"></i> Filter Grup Mesin</div>
+          <div class="mgf-btns" id="machineGroupBtns">
+            <button class="mgf-btn active" data-group="ALL">Semua</button>
+            <button class="mgf-btn" data-group="ILAPAK">ILAPAK</button>
+            <button class="mgf-btn" data-group="SIG">SIG</button>
+            <button class="mgf-btn" data-group="UNIFIL">UNIFIL</button>
+            <button class="mgf-btn" data-group="CHIMEI">CHIMEI</button>
+            <button class="mgf-btn" data-group="JINSUG">JINSUG</button>
+            <button class="mgf-btn" data-group="FBD">FBD</button>
+            <button class="mgf-btn" data-group="STORAGE TANK">Storage Tank</button>
+            <button class="mgf-btn" data-group="BOILER">Boiler</button>
+            <button class="mgf-btn" data-group="CHILLER">Chiller</button>
+            <button class="mgf-btn" data-group="KOMPRESOR">Kompresor</button>
+            <button class="mgf-btn" data-group="AHU">AHU</button>
+          </div>
+        </div>
+
+        <!-- Current group label -->
+        <div class="machine-group-label" id="machineGroupLabel">
+          <i class="bi bi-cpu-fill"></i> <span id="machineGroupLabelText">Semua Mesin</span>
         </div>
 
         <!-- Machine KPI Row -->
