@@ -32,6 +32,115 @@ const App = {
   intervals: {},        // setInterval references
 };
 
+
+// ===================== AUTH SYSTEM =====================
+
+const AUTH_KEY = 'btkch_auth_session';
+
+const USERS = [
+  { username: 'admin',    password: 'admin123',  role: 'admin', name: 'Admin Sparepart', dept: 'Maintenance' },
+  { username: 'mra',      password: 'mra123',    role: 'user',  name: 'MRA',             dept: 'Produksi' },
+  { username: 'sigit',    password: 'sigit123',  role: 'user',  name: 'SIGIT',           dept: 'Utility' },
+  { username: 'twn',      password: 'twn123',    role: 'user',  name: 'TWN',             dept: 'Produksi' },
+  { username: 'nasikin',  password: 'nasikin123',role: 'user',  name: 'NASIKIN',         dept: 'Produksi' },
+  { username: 'ardifan',  password: 'ardifan123',role: 'user',  name: 'Ardifan',         dept: 'Produksi' },
+];
+
+const PERMISSIONS = {
+  admin: { pages: ['dashboard','machine','analytic','transaction','setting'], canExport: true,  canSetting: true,  label: 'Admin Sparepart' },
+  user:  { pages: ['dashboard','machine','analytic','transaction'],           canExport: false, canSetting: false, label: 'User' },
+};
+
+let currentUser = null;
+
+function saveSession(user) {
+  try { localStorage.setItem(AUTH_KEY, JSON.stringify({ username: user.username, role: user.role, name: user.name, dept: user.dept })); } catch(e) {}
+}
+function loadSession() {
+  try { const s = localStorage.getItem(AUTH_KEY); return s ? JSON.parse(s) : null; } catch(e) { return null; }
+}
+function clearSession() {
+  try { localStorage.removeItem(AUTH_KEY); } catch(e) {}
+}
+
+function login(username, password) {
+  const user = USERS.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
+  if (!user) return false;
+  currentUser = user;
+  saveSession(user);
+  return true;
+}
+
+function logout() {
+  currentUser = null;
+  clearSession();
+  showLoginScreen();
+}
+
+function applyRoleUI() {
+  if (!currentUser) return;
+  const perm = PERMISSIONS[currentUser.role] || PERMISSIONS.user;
+  const nameEl   = document.getElementById('topnavUserName');
+  const roleEl   = document.getElementById('topnavUserRole');
+  const avatarEl = document.getElementById('userAvatar');
+  if (nameEl)   nameEl.textContent = currentUser.name;
+  if (roleEl)   roleEl.textContent = perm.label + ' — ' + currentUser.dept;
+  if (avatarEl) avatarEl.style.background = currentUser.role === 'admin'
+    ? 'linear-gradient(135deg,#1e90ff,#00d4ff)'
+    : 'linear-gradient(135deg,#a855f7,#6366f1)';
+  const settingNav = document.getElementById('settingNavItem');
+  if (settingNav) settingNav.style.display = perm.canSetting ? '' : 'none';
+  const exportBtn = document.getElementById('exportExcel');
+  if (exportBtn) exportBtn.style.display = perm.canExport ? '' : 'none';
+}
+
+function showLoginScreen() {
+  const ls = document.getElementById('loginScreen');
+  const aw = document.getElementById('appWrapper');
+  const ld = document.getElementById('loadingScreen');
+  if (ls) ls.style.display = 'flex';
+  if (aw) aw.style.display = 'none';
+  if (ld) ld.style.display = 'none';
+}
+function hideLoginScreen() {
+  const ls = document.getElementById('loginScreen');
+  if (ls) ls.style.display = 'none';
+}
+
+function initLogin() {
+  const loginBtn    = document.getElementById('loginBtn');
+  const usernameEl  = document.getElementById('loginUsername');
+  const passwordEl  = document.getElementById('loginPassword');
+  const errorEl     = document.getElementById('loginError');
+  const togglePwBtn = document.getElementById('togglePwBtn');
+  const togglePwIcon= document.getElementById('togglePwIcon');
+
+  togglePwBtn?.addEventListener('click', () => {
+    const isText = passwordEl.type === 'text';
+    passwordEl.type = isText ? 'password' : 'text';
+    if (togglePwIcon) togglePwIcon.className = isText ? 'bi bi-eye-fill' : 'bi bi-eye-slash-fill';
+  });
+
+  function doLogin() {
+    const u = (usernameEl?.value || '').trim();
+    const p = passwordEl?.value || '';
+    if (!u || !p) { if (errorEl) errorEl.textContent = 'Username dan password wajib diisi.'; return; }
+    if (login(u, p)) {
+      if (errorEl) errorEl.textContent = '';
+      hideLoginScreen();
+      startApp();
+    } else {
+      if (errorEl) errorEl.textContent = 'Username atau password salah.';
+      if (passwordEl) { passwordEl.value = ''; passwordEl.focus(); }
+    }
+  }
+
+  loginBtn?.addEventListener('click', doLogin);
+  passwordEl?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  usernameEl?.addEventListener('keydown', e => { if (e.key === 'Enter') passwordEl?.focus(); });
+  document.getElementById('logoutBtn')?.addEventListener('click', () => { if (confirm('Yakin ingin logout?')) logout(); });
+}
+
 // ===================== CSV FILE PATHS =====================
 const CSV_OUTGOING = './data/outgoing.csv';
 const CSV_EXPENSE  = './data/outgoingexpense.csv';
@@ -685,14 +794,81 @@ function renderRecentTransactions(data) {
   }).join('');
 }
 
+
+// ===================== MACHINE GROUP SYSTEM =====================
+
+const MACHINE_GROUPS = {
+  'ILAPAK':       ['ILAPAK','ILAPAK 1','ILAPAK 2','ILAPAK 3','ILAPAK 4','ILAPAK 5','ILAPAK 6','ILAPAK 7','ILAPAK 8','ILAPAK 9','ILAPAK 10','ILAPAK 11','ILAPAK 12'],
+  'SIG':          ['SIG A','SIG B','SIG 5','SIG 6','SIG'],
+  'UNIFIL':       ['UNIFIL','UNIFIL A','UNIFIL B'],
+  'CHIMEI':       ['CHIMEI','CHIMEI 1','CHIMEI 3A','CHIMEI 4B','CHIMEI 5','CHIMEI 5B','CHIMEI 8A','CHIMEI 9A','CHIMEI 10','CHIMEI 11','CHIMEI 12'],
+  'JINSUG':       ['JINSUG','JINSUG 1','JINSUG 2','JINSUG 3','JINSUG 4','JINSUG 5'],
+  'FBD':          ['FBD','FBD GLATT','FBD 2','FBD 3','FBD 4','FBD 6','TEMACH','MIXING TANK','SILVERSON'],
+  'STORAGE TANK': ['STORAGE TANK','STORAGE TANK 1','STORAGE TANK 2','STORAGE TANK 3','STORAGE TANK 4','STORAGE TANK 5','STORAGE TANK 6','STORAGE TANK 7','STORAGE TANK 8','STORAGE TANK 9','STORAGE TANK 10','STORAGE TANK 11','STORAGE TANK 12','TETRA 1','TETRA 2','TETRA 3','IPAL','AQUADEMIN','AQUADEMIN 1','AQUADEMIN 2','AQUADEMIN 3'],
+  'BOILER':       ['BOILER','BOILER 1','BOILER 2','BOILER MIURA (3)'],
+  'CHILLER':      ['CHILLER','CHILLER 1','CHILLER 2','CHILLER 3','CHILLER 4','CHILLER 5'],
+  'KOMPRESOR':    ['KOMPRESOR','KOMPRESOR 1','KOMPRESOR 2','KOMPRESOR 3','KOMPRESOR 4','KOMPRESOR 5'],
+  'AHU':          ['AHU','AHU 101','AHU 102','AHU 103','AHU 104','AHU 105','AHU 106','AHU 107','AHU 108','AHU 109','AHU 110','AHU 111','AHU 112','AHU 113','AHU 114','AHU 115','AHU 116','AHU 201','AHU 202','AHU 203','AHU 204','AHU 205','AHU 206','AHU 207','AHU 208','AHU 209','AHU 210','AHU 211','AHU 212','AHU 213','AHU 214','AHU 215','AHU 216','AHU 217','AHU 218','AHU 219','AHU 220','AHU 221','AHU 301','AHU 302','AHU 303','AHU 304','AHU 305','AHU 306','AHU 307','AHU 308'],
+};
+
+let currentMachineGroup = 'ALL';
+
+function filterByMachineGroup(data, group) {
+  if (!group || group === 'ALL') return data;
+  const machines = MACHINE_GROUPS[group] || [];
+  return data.filter(r => {
+    if (!r.machine) return false;
+    const m = r.machine.trim().toUpperCase();
+    return machines.some(mg => m === mg.toUpperCase()) || m.startsWith(group.toUpperCase());
+  });
+}
+
+function initMachineGroupFilter() {
+  document.querySelectorAll('.mgf-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mgf-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentMachineGroup = btn.dataset.group;
+      const labelEl = document.getElementById('machineGroupLabelText');
+      if (labelEl) labelEl.textContent = currentMachineGroup === 'ALL' ? 'Semua Mesin' : 'Grup: ' + currentMachineGroup;
+      renderMachinePage(App.data.filtered);
+    });
+  });
+
+  document.querySelectorAll('.nav-sub-item').forEach(item => {
+    item.addEventListener('click', e => {
+      e.preventDefault();
+      currentMachineGroup = item.dataset.machineGroup;
+      document.querySelectorAll('.mgf-btn').forEach(b => b.classList.toggle('active', b.dataset.group === currentMachineGroup));
+      const labelEl = document.getElementById('machineGroupLabelText');
+      if (labelEl) labelEl.textContent = currentMachineGroup === 'ALL' ? 'Semua Mesin' : 'Grup: ' + currentMachineGroup;
+      navigateTo('machine');
+    });
+  });
+}
+
+function initMachineSubNav() {
+  const machineNavItem = document.getElementById('machineNavItem');
+  const subGroup = document.getElementById('machineSubGroup');
+  const chevron  = document.getElementById('machineChevron');
+  if (!machineNavItem || !subGroup) return;
+  machineNavItem.addEventListener('click', e => {
+    const isExp = subGroup.classList.contains('expanded');
+    subGroup.classList.toggle('expanded', !isExp);
+    chevron?.classList.toggle('rotated', !isExp);
+  });
+}
+
 // ===================== CHARTS — MACHINE PAGE =====================
 
 function renderMachinePage(data) {
-  renderMachineKPIs(data);
-  renderMachineBarChart(data);
-  renderMachineBreakdownChart(data);
-  renderMachineRankingTable(data);
-  renderMachineTrendChart(data);
+  // Apply group filter jika ada
+  const groupData = filterByMachineGroup(data, currentMachineGroup);
+  renderMachineKPIs(groupData);
+  renderMachineBarChart(groupData);
+  renderMachineBreakdownChart(groupData);
+  renderMachineRankingTable(groupData);
+  renderMachineTrendChart(groupData);
 }
 
 function renderMachineKPIs(data) {
@@ -1723,14 +1899,18 @@ function startAutoRefresh() {
 
 // ===================== MAIN INIT =====================
 
-async function init() {
-  // 1. Load saved settings dari localStorage PERTAMA
+/** startApp — dipanggil setelah login berhasil */
+async function startApp() {
+  // 1. Load saved settings
   loadSettings();
 
-  // 2. Start clock immediately
+  // 2. Apply role restrictions to UI
+  applyRoleUI();
+
+  // 3. Start clock immediately
   startClock();
 
-  // 3. Init UI components
+  // 4. Init UI components
   initSidebar();
   initNavItems();
   initDarkMode();
@@ -1738,22 +1918,38 @@ async function init() {
   initTransactionControls();
   initSortableTable();
   initSettings();
+  initMachineGroupFilter();
+  initMachineSubNav();
 
-  // 3. Run animation AND load data in parallel — wait for BOTH
+  // 5. Run animation AND load data in parallel
   await Promise.all([
-    runLoadingSequence(),   // animates to 95%, resolves after ~1.9s
-    loadAllData(),          // fetches + parses CSV
+    runLoadingSequence(),
+    loadAllData(),
   ]);
 
-  // 4. Both done — finish animation, then render
+  // 6. Both done — finish animation, then render
   App.data.filtered = getAllData();
-  finishLoading();          // bar → 100%, fade out loading screen
+  finishLoading();
 
-  // Small delay so fade-out starts before charts render
   setTimeout(() => {
     navigateTo('dashboard');
     startAutoRefresh();
   }, 400);
+}
+
+async function init() {
+  // Init login UI dulu
+  initLogin();
+
+  // Cek kalau sudah ada session tersimpan
+  const session = loadSession();
+  if (session) {
+    currentUser = session;
+    hideLoginScreen();
+    await startApp();
+  } else {
+    showLoginScreen();
+  }
 }
 
 // ===================== BOOT =====================
