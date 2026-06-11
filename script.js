@@ -115,6 +115,17 @@ function initLogin() {
   const togglePwBtn = document.getElementById('togglePwBtn');
   const togglePwIcon= document.getElementById('togglePwIcon');
 
+  // ── Toggle panel quick login saat klik tombol "Login User" ──
+  const btnUserLogin = document.getElementById('btnUserLogin');
+  const quickLoginPanel = document.getElementById('quickLoginPanel');
+  if (btnUserLogin && quickLoginPanel) {
+    btnUserLogin.addEventListener('click', () => {
+      const isVisible = quickLoginPanel.style.display !== 'none';
+      quickLoginPanel.style.display = isVisible ? 'none' : 'block';
+      btnUserLogin.classList.toggle('active', !isVisible);
+    });
+  }
+
   // ── Build quick login buttons dari USERS (role=user saja) ──
   const quickGrid = document.getElementById('quickLoginGrid');
   if (quickGrid) {
