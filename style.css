@@ -1891,6 +1891,27 @@ body.light-mode .kpi-label { color: #475569; }
 .login-bg-ring.r3 { width: 300px; height: 300px; top: 40%; left: 40%; animation: bgSpin 15s linear infinite; border-color: rgba(0,229,160,0.04); }
 @keyframes bgSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+/* Simple centered login card */
+.login-card {
+  width: min(420px, 95vw);
+  border-radius: 24px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid var(--clr-border);
+  box-shadow: 0 32px 100px rgba(0,0,0,0.5);
+  padding: 36px 32px 28px;
+  display: flex; flex-direction: column; gap: 0;
+  animation: loginFadeIn 0.5s ease;
+  position: relative; z-index: 1;
+  backdrop-filter: blur(12px);
+}
+
+.login-panel-footer {
+  margin-top: 20px; padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-size: 10px; color: rgba(255,255,255,0.2);
+  text-align: center;
+}
+
 /* Main container — two panels side by side */
 .login-container {
   display: flex;
@@ -2008,10 +2029,7 @@ body.light-mode .kpi-label { color: #475569; }
 }
 .quick-login-note i { font-size: 11px; color: var(--clr-blue); opacity: 0.6; }
 
-.login-panel-footer {
-  margin-top: auto; padding-top: 20px;
-  font-size: 10px; color: rgba(255,255,255,0.15);
-}
+/* login-panel-footer — handled in .login-card section above */
 
 /* ── RIGHT PANEL ── */
 .login-panel-right {
