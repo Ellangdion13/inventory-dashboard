@@ -268,16 +268,16 @@ function parseDate(str) {
     let y = c < 100 ? c + 2000 : c;
 
     if (a > 12) {
-      // dd/mm/yyyy
+      // Pasti dd/mm/yyyy karena hari tidak mungkin > 12 kalau bulan
       const dt = new Date(y, b - 1, a);
       if (!isNaN(dt.getTime())) return dt;
     } else if (b > 12) {
-      // M/D/YYYY — format Excel/US
+      // Pasti M/D/YYYY karena bulan tidak mungkin > 12
       const dt = new Date(y, a - 1, b);
       if (!isNaN(dt.getTime())) return dt;
     } else {
-      // Ambigu — asumsikan M/D/YYYY (format export Excel Indonesia)
-      const dt = new Date(y, a - 1, b);
+      // Ambigu — default dd/mm/yyyy (format Indonesia)
+      const dt = new Date(y, b - 1, a);
       if (!isNaN(dt.getTime())) return dt;
     }
   }
