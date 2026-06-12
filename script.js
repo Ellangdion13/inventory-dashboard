@@ -239,19 +239,34 @@ function fmtDate(d) {
 }
 
 /** Parse tanggal dari berbagai format → Date object
- *  Support: dd/mm/yyyy, M/D/YYYY (Excel US), yyyy-mm-dd, dd-mm-yyyy */
+ *  Support: Excel serial number, dd/mm/yyyy, M/D/YYYY, yyyy-mm-dd, dd-mm-yyyy */
 function parseDate(str) {
-  if (!str || typeof str !== 'string') return null;
+  if (!str) return null;
+
+  // ── Excel serial number (misal 46184, 46185) ──
+  // Excel menyimpan tanggal sebagai integer hari sejak 1 Jan 1900
+  // Angka murni tanpa separator = serial number Excel
+  if (typeof str === 'number' || (typeof str === 'string' && /^\d{5}$/.test(str.trim()))) {
+    const serial = parseInt(str, 10);
+    if (serial > 40000 && serial < 60000) { // range wajar 2009-2064
+      // Excel epoch: 1 Jan 1900 = serial 1
+      // Koreksi bug Excel (menganggap 1900 adalah leap year): kurangi 1
+      const excelEpoch = new Date(1900, 0, 1);
+      const dt = new Date(excelEpoch.getTime() + (serial - 2) * 86400000);
+      if (!isNaN(dt.getTime())) return dt;
+    }
+  }
+
+  if (typeof str !== 'string') return null;
   str = str.trim();
   if (!str) return null;
 
+  // ── Format dengan slash: dd/mm/yyyy atau M/D/YYYY ──
   const slashParts = str.split('/');
   if (slashParts.length === 3) {
     const [a, b, c] = slashParts.map(s => parseInt(s, 10));
     let y = c < 100 ? c + 2000 : c;
 
-    // Deteksi otomatis: kalau part pertama > 12, pasti dd/mm/yyyy
-    // Kalau part kedua > 12, pasti M/D/YYYY (bulan/hari/tahun = format Excel)
     if (a > 12) {
       // dd/mm/yyyy
       const dt = new Date(y, b - 1, a);
@@ -261,14 +276,13 @@ function parseDate(str) {
       const dt = new Date(y, a - 1, b);
       if (!isNaN(dt.getTime())) return dt;
     } else {
-      // Ambigu (misal 5/6/2026) — asumsikan M/D/YYYY karena CSV dari Excel Indonesia
-      // seringnya export ke M/D/YYYY
-      const dtUS = new Date(y, a - 1, b); // M/D/YYYY
-      if (!isNaN(dtUS.getTime())) return dtUS;
+      // Ambigu — asumsikan M/D/YYYY (format export Excel Indonesia)
+      const dt = new Date(y, a - 1, b);
+      if (!isNaN(dt.getTime())) return dt;
     }
   }
 
-  // Format: yyyy-mm-dd (ISO)
+  // ── Format yyyy-mm-dd (ISO) atau dd-mm-yyyy ──
   const dashParts = str.split('-');
   if (dashParts.length === 3) {
     const first = parseInt(dashParts[0], 10);
@@ -282,7 +296,7 @@ function parseDate(str) {
     }
   }
 
-  // Fallback native
+  // ── Fallback native ──
   const dt = new Date(str);
   return isNaN(dt.getTime()) ? null : dt;
 }
