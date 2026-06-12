@@ -44,7 +44,7 @@ const USERS = [
 
 const PERMISSIONS = {
   admin: { pages: ['dashboard','machine','analytic','transaction','setting'], canExport: true,  canSetting: true,  label: 'Admin Sparepart' },
-  user:  { pages: ['dashboard','machine','analytic','transaction'],           canExport: false, canSetting: false, label: 'User' },
+  user:  { pages: ['dashboard','machine'],                                    canExport: false, canSetting: false, label: 'User' },
 };
 
 let currentUser = null;
@@ -76,6 +76,8 @@ function logout() {
 function applyRoleUI() {
   if (!currentUser) return;
   const perm = PERMISSIONS[currentUser.role] || PERMISSIONS.user;
+
+  // Update topnav user info
   const nameEl   = document.getElementById('topnavUserName');
   const roleEl   = document.getElementById('topnavUserRole');
   const avatarEl = document.getElementById('userAvatar');
@@ -84,8 +86,18 @@ function applyRoleUI() {
   if (avatarEl) avatarEl.style.background = currentUser.role === 'admin'
     ? 'linear-gradient(135deg,#1e90ff,#00d4ff)'
     : 'linear-gradient(135deg,#a855f7,#6366f1)';
-  const settingNav = document.getElementById('settingNavItem');
-  if (settingNav) settingNav.style.display = perm.canSetting ? '' : 'none';
+
+  // Sembunyikan/tampilkan nav items berdasarkan role
+  const allNavPages = ['dashboard','machine','analytic','transaction','setting'];
+  allNavPages.forEach(p => {
+    const navEl = document.querySelector(`.nav-item[data-page="${p}"]`);
+    if (!navEl) return;
+    const allowed = perm.pages.includes(p);
+    navEl.style.display    = allowed ? '' : 'none';
+    navEl.style.pointerEvents = allowed ? '' : 'none';
+  });
+
+  // Sembunyikan export button untuk non-admin
   const exportBtn = document.getElementById('exportExcel');
   if (exportBtn) exportBtn.style.display = perm.canExport ? '' : 'none';
 }
@@ -1637,6 +1649,14 @@ function initSortableTable() {
 // ===================== PAGE NAVIGATION =====================
 
 function navigateTo(page) {
+  // Cek akses berdasarkan role — redirect ke dashboard kalau tidak boleh
+  if (currentUser) {
+    const perm = PERMISSIONS[currentUser.role] || PERMISSIONS.user;
+    if (!perm.pages.includes(page)) {
+      page = 'dashboard';
+    }
+  }
+
   // Hide all pages
   document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
 
