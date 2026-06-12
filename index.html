@@ -172,6 +172,13 @@
         <div class="nav-indicator"></div>
       </a>
 
+      <a href="#" class="nav-item admin-only" data-page="stock" id="stockNavItem">
+        <div class="nav-icon"><i class="bi bi-box-seam-fill"></i></div>
+        <span class="nav-label">Stock Master</span>
+        <span class="nav-alert-badge" id="stockAlertBadge" style="display:none">0</span>
+        <div class="nav-indicator"></div>
+      </a>
+
       <div class="nav-section-label">SYSTEM</div>
 
       <a href="#" class="nav-item admin-only" data-page="setting" id="settingNavItem">
@@ -689,6 +696,107 @@
       </div>
       <!-- END PAGE: TRANSACTION -->
 
+      <!-- ========== PAGE: STOCK MASTER ========== -->
+      <div class="page hidden" id="page-stock">
+        <div class="page-header-block">
+          <h2 class="page-h2"><i class="bi bi-box-seam-fill"></i> Stock Master</h2>
+          <p class="page-desc">Status stok terkini seluruh item sparepart</p>
+        </div>
+
+        <!-- Stock Summary KPI -->
+        <div class="stock-kpi-row" id="stockKpiRow">
+          <div class="stock-kpi-card clr-blue">
+            <div class="skpi-icon"><i class="bi bi-boxes"></i></div>
+            <div class="skpi-body">
+              <div class="skpi-val" id="skpiTotalItem">--</div>
+              <div class="skpi-label">Total Item</div>
+            </div>
+          </div>
+          <div class="stock-kpi-card clr-green">
+            <div class="skpi-icon"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="skpi-body">
+              <div class="skpi-val" id="skpiOkItem">--</div>
+              <div class="skpi-label">Stock Aman</div>
+            </div>
+          </div>
+          <div class="stock-kpi-card clr-orange">
+            <div class="skpi-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            <div class="skpi-body">
+              <div class="skpi-val" id="skpiLowItem">--</div>
+              <div class="skpi-label">Low Stock</div>
+            </div>
+          </div>
+          <div class="stock-kpi-card clr-red">
+            <div class="skpi-icon"><i class="bi bi-x-octagon-fill"></i></div>
+            <div class="skpi-body">
+              <div class="skpi-val" id="skpiCriticalItem">--</div>
+              <div class="skpi-label">Critical</div>
+            </div>
+          </div>
+          <div class="stock-kpi-card clr-purple">
+            <div class="skpi-icon"><i class="bi bi-slash-circle-fill"></i></div>
+            <div class="skpi-body">
+              <div class="skpi-val" id="skpiEmptyItem">--</div>
+              <div class="skpi-label">Habis (0)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="table-controls glass-card">
+          <div class="tc-left">
+            <div class="search-wrap">
+              <i class="bi bi-search search-ico"></i>
+              <input type="text" id="stockSearch" placeholder="Cari kode atau nama item..." class="search-input" />
+            </div>
+            <select id="stockFilterStatus" class="filter-select">
+              <option value="">Semua Status</option>
+              <option value="critical">Critical</option>
+              <option value="low">Low Stock</option>
+              <option value="ok">Aman</option>
+              <option value="empty">Habis</option>
+            </select>
+          </div>
+          <div class="tc-right">
+            <span class="row-count" id="stockRowCount">0 item</span>
+          </div>
+        </div>
+
+        <!-- Stock Table -->
+        <div class="glass-card mt-3">
+          <div class="table-responsive">
+            <table class="data-table sortable-table" id="stockTable">
+              <thead>
+                <tr>
+                  <th style="width:40px">#</th>
+                  <th class="sortable" data-col="item_code">Kode Item <i class="bi bi-chevron-expand"></i></th>
+                  <th class="sortable" data-col="item_name">Nama Item <i class="bi bi-chevron-expand"></i></th>
+                  <th class="sortable" data-col="stock">Stock Saat Ini <i class="bi bi-chevron-expand"></i></th>
+                  <th class="sortable" data-col="total_out">Total Keluar <i class="bi bi-chevron-expand"></i></th>
+                  <th class="sortable" data-col="last_out">Terakhir Keluar <i class="bi bi-chevron-expand"></i></th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="stockTableBody">
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination-wrap">
+            <div class="pagination-info" id="stockPaginationInfo">Menampilkan 0-0 dari 0</div>
+            <div class="pagination-controls" id="stockPaginationControls"></div>
+            <div class="page-size-wrap">
+              <label>Baris:</label>
+              <select id="stockPageSize">
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- END PAGE: STOCK MASTER -->
+
       <!-- ========== PAGE: SETTING ========== -->
       <div class="page hidden" id="page-setting">
         <div class="page-header-block">
@@ -797,6 +905,9 @@
 
 </div>
 <!-- END APP WRAPPER -->
+
+<!-- ===================== ALERT TOAST ===================== -->
+<div id="alertToastContainer" class="alert-toast-container"></div>
 
 <!-- ===================== EXTERNAL SCRIPTS ===================== -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

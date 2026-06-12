@@ -13,12 +13,20 @@ const App = {
     filtered: [],         // Gabungan outgoing+expense, after date filter
     filteredOutgoing: [], // Hanya outgoing, after date filter (untuk dashboard)
     filteredExpense: [],  // Hanya expense, after date filter (untuk trx tab expense)
+    stockMaster: [],      // Computed stock master dari outgoing data
   },
   settings: {
     lowStockThreshold: 10,
     autoRefresh: true,
     refreshInterval: 60000,
     darkMode: false,
+  },
+  stock: {
+    sortCol: 'stock',
+    sortDir: 'asc',
+    currentPage: 1,
+    pageSize: 25,
+    lastAlertCount: 0,   // untuk deteksi perubahan alert
   },
   ui: {
     currentPage: 'dashboard',
@@ -46,8 +54,8 @@ const USERS = [
 ];
 
 const PERMISSIONS = {
-  admin: { pages: ['dashboard','machine','analytic','transaction','setting'], canExport: true,  canSetting: true,  label: 'Admin Sparepart' },
-  user:  { pages: ['dashboard','machine'],                                    canExport: false, canSetting: false, label: 'User' },
+  admin: { pages: ['dashboard','machine','analytic','transaction','stock','setting'], canExport: true,  canSetting: true,  label: 'Admin Sparepart' },
+  user:  { pages: ['dashboard','machine'],                                            canExport: false, canSetting: false, label: 'User' },
 };
 
 let currentUser = null;
@@ -91,7 +99,7 @@ function applyRoleUI() {
     : 'linear-gradient(135deg,#a855f7,#6366f1)';
 
   // Sembunyikan/tampilkan nav items berdasarkan role
-  const allNavPages = ['dashboard','machine','analytic','transaction','setting'];
+  const allNavPages = ['dashboard','machine','analytic','transaction','stock','setting'];
   allNavPages.forEach(p => {
     const navEl = document.querySelector(`.nav-item[data-page="${p}"]`);
     if (!navEl) return;
@@ -1442,6 +1450,360 @@ function renderSparepartPerMachine(data) {
     }).join('');
 }
 
+
+// ===================== STOCK MASTER =====================
+
+/** Bangun stock master dari data outgoing — ambil stock terbaru per item */
+function buildStockMaster(outgoing) {
+  const itemMap = {};
+
+  outgoing.forEach(r => {
+    if (!r.item_code || r.item_code.trim() === '') return;
+
+    const code = r.item_code.trim();
+
+    if (!itemMap[code]) {
+      itemMap[code] = {
+        item_code:  code,
+        item_name:  r.item_name || code,
+        stock:      r.stock,
+        total_out:  0,
+        last_out:   '',
+        _lastDate:  null,
+      };
+    }
+
+    // Akumulasi total keluar
+    itemMap[code].total_out += (parseInt(r.qty) || 0);
+
+    // Ambil stock dan tanggal terbaru
+    const d = parseDate(r.date);
+    if (d && (!itemMap[code]._lastDate || d >= itemMap[code]._lastDate)) {
+      itemMap[code]._lastDate = d;
+      itemMap[code].last_out  = r.date;
+      if (r.stock !== undefined && r.stock !== '') {
+        itemMap[code].stock = parseInt(r.stock) || 0;
+      }
+    }
+  });
+
+  return Object.values(itemMap).map(item => ({
+    ...item,
+    stock: parseInt(item.stock) || 0,
+  }));
+}
+
+/** Tentukan status item berdasarkan threshold */
+function getStockStatus(stock, threshold) {
+  if (stock <= 0)                   return { level: 'empty',    label: 'Habis',      color: '#64748b' };
+  if (stock <= threshold * 0.5)     return { level: 'critical', label: 'Critical',   color: '#ef4444' };
+  if (stock <= threshold)           return { level: 'low',      label: 'Low Stock',  color: '#f59e0b' };
+  return                                   { level: 'ok',       label: 'Aman',       color: '#00e5a0' };
+}
+
+/** Render halaman Stock Master */
+function renderStockMasterPage() {
+  const threshold = App.settings.lowStockThreshold;
+  const master    = buildStockMaster(App.data.outgoing);
+  App.data.stockMaster = master;
+
+  // ── KPI ──
+  const total    = master.length;
+  const critical = master.filter(i => i.stock > 0 && i.stock <= threshold * 0.5).length;
+  const low      = master.filter(i => i.stock > threshold * 0.5 && i.stock <= threshold).length;
+  const empty    = master.filter(i => i.stock <= 0).length;
+  const ok       = total - critical - low - empty;
+
+  animateCounter('skpiTotalItem',    total);
+  animateCounter('skpiOkItem',       ok);
+  animateCounter('skpiLowItem',      low);
+  animateCounter('skpiCriticalItem', critical);
+  animateCounter('skpiEmptyItem',    empty);
+
+  // ── Filter + Search ──
+  const search    = (document.getElementById('stockSearch')?.value    || '').toLowerCase();
+  const statusFilter = document.getElementById('stockFilterStatus')?.value || '';
+
+  let rows = master.filter(item => {
+    const st = getStockStatus(item.stock, threshold);
+    if (statusFilter && st.level !== statusFilter) return false;
+    if (search) {
+      const hay = (item.item_code + ' ' + item.item_name).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  // ── Sort ──
+  const col = App.stock.sortCol;
+  const dir = App.stock.sortDir;
+  rows.sort((a, b) => {
+    let va = a[col], vb = b[col];
+    if (col === 'stock' || col === 'total_out') {
+      va = Number(va) || 0; vb = Number(vb) || 0;
+    } else if (col === 'last_out') {
+      va = parseDate(va) || new Date(0);
+      vb = parseDate(vb) || new Date(0);
+    } else {
+      va = String(va || '').toLowerCase();
+      vb = String(vb || '').toLowerCase();
+    }
+    if (va < vb) return dir === 'asc' ? -1 :  1;
+    if (va > vb) return dir === 'asc' ?  1 : -1;
+    return 0;
+  });
+
+  // ── Pagination ──
+  const pageSize  = App.stock.pageSize;
+  const totalRows = rows.length;
+  const pages     = Math.ceil(totalRows / pageSize) || 1;
+  let   page      = Math.min(App.stock.currentPage, pages);
+  App.stock.currentPage = page;
+
+  const startIdx  = (page - 1) * pageSize;
+  const pageRows  = rows.slice(startIdx, startIdx + pageSize);
+
+  const countEl = document.getElementById('stockRowCount');
+  if (countEl) countEl.textContent = `${fmtNum(totalRows)} item`;
+
+  // ── Render table ──
+  const tbody = document.getElementById('stockTableBody');
+  if (!tbody) return;
+
+  if (pageRows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--clr-text3);padding:30px">
+      <i class="bi bi-inbox" style="font-size:28px;display:block;margin-bottom:8px"></i>Tidak ada data
+    </td></tr>`;
+  } else {
+    tbody.innerHTML = pageRows.map((item, i) => {
+      const st       = getStockStatus(item.stock, threshold);
+      const rowNum   = startIdx + i + 1;
+      const pct      = threshold > 0
+        ? Math.min((item.stock / (threshold * 3)) * 100, 100) : 0;
+
+      return `
+        <tr class="${st.level === 'critical' || st.level === 'empty' ? 'row-alert' : ''}">
+          <td style="color:var(--clr-text3);font-size:11px">${rowNum}</td>
+          <td><span class="item-code-badge">${item.item_code}</span></td>
+          <td style="font-weight:500;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            ${item.item_name}
+          </td>
+          <td>
+            <div class="stock-cell">
+              <div class="stock-bar-wrap">
+                <div class="stock-bar-fill ${st.level}" style="width:${pct}%"></div>
+              </div>
+              <span class="stock-val" style="color:${st.color}">
+                <strong>${fmtNum(item.stock)}</strong> unit
+              </span>
+            </div>
+          </td>
+          <td style="font-family:'JetBrains Mono',monospace;color:var(--clr-text2)">
+            ${fmtNum(item.total_out)}
+          </td>
+          <td style="font-size:12px;color:var(--clr-text3)">
+            ${item.last_out || '-'}
+          </td>
+          <td>
+            <span class="stock-status-badge ${st.level}">
+              ${st.level === 'empty'    ? '<i class="bi bi-slash-circle-fill"></i>' :
+                st.level === 'critical' ? '<i class="bi bi-x-octagon-fill"></i>' :
+                st.level === 'low'      ? '<i class="bi bi-exclamation-triangle-fill"></i>' :
+                                          '<i class="bi bi-check-circle-fill"></i>'}
+              ${st.label}
+            </span>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Pagination
+  renderStockPagination(totalRows, page, pageSize, pages);
+
+  // Update sortable headers
+  document.querySelectorAll('#stockTable th.sortable').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.dataset.col === col) {
+      th.classList.add(dir === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+  });
+}
+
+function renderStockPagination(total, page, pageSize, pages) {
+  const info = document.getElementById('stockPaginationInfo');
+  const ctrl = document.getElementById('stockPaginationControls');
+  if (!info || !ctrl) return;
+
+  const from = total > 0 ? (page - 1) * pageSize + 1 : 0;
+  const to   = Math.min(page * pageSize, total);
+  info.textContent = `Menampilkan ${fmtNum(from)}-${fmtNum(to)} dari ${fmtNum(total)}`;
+
+  let html = `<button class="page-btn" onclick="goToStockPage(${page-1})" ${page<=1?'disabled':''}>
+    <i class="bi bi-chevron-left"></i></button>`;
+
+  const maxBtn = 5;
+  let startP = Math.max(1, page - 2);
+  let endP   = Math.min(pages, startP + maxBtn - 1);
+  if (endP - startP < maxBtn - 1) startP = Math.max(1, endP - maxBtn + 1);
+
+  if (startP > 1) html += `<button class="page-btn" onclick="goToStockPage(1)">1</button>`;
+  if (startP > 2) html += `<button class="page-btn" disabled>…</button>`;
+  for (let p = startP; p <= endP; p++) {
+    html += `<button class="page-btn ${p===page?'active':''}" onclick="goToStockPage(${p})">${p}</button>`;
+  }
+  if (endP < pages - 1) html += `<button class="page-btn" disabled>…</button>`;
+  if (endP < pages) html += `<button class="page-btn" onclick="goToStockPage(${pages})">${pages}</button>`;
+
+  html += `<button class="page-btn" onclick="goToStockPage(${page+1})" ${page>=pages?'disabled':''}>
+    <i class="bi bi-chevron-right"></i></button>`;
+
+  ctrl.innerHTML = html;
+}
+
+window.goToStockPage = function(p) {
+  App.stock.currentPage = p;
+  renderStockMasterPage();
+};
+
+function initStockMasterControls() {
+  document.getElementById('stockSearch')?.addEventListener('input', () => {
+    App.stock.currentPage = 1;
+    renderStockMasterPage();
+  });
+
+  document.getElementById('stockFilterStatus')?.addEventListener('change', () => {
+    App.stock.currentPage = 1;
+    renderStockMasterPage();
+  });
+
+  document.getElementById('stockPageSize')?.addEventListener('change', (e) => {
+    App.stock.pageSize    = parseInt(e.target.value);
+    App.stock.currentPage = 1;
+    renderStockMasterPage();
+  });
+
+  // Sortable headers untuk stock table
+  document.querySelectorAll('#stockTable th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (App.stock.sortCol === col) {
+        App.stock.sortDir = App.stock.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        App.stock.sortCol = col;
+        App.stock.sortDir = col === 'stock' ? 'asc' : 'desc';
+      }
+      App.stock.currentPage = 1;
+      renderStockMasterPage();
+    });
+  });
+}
+
+// ===================== ALERT SYSTEM =====================
+
+/** Hitung semua item yang perlu alert */
+function computeAlerts() {
+  const threshold = App.settings.lowStockThreshold;
+  const master    = buildStockMaster(App.data.outgoing);
+
+  return master
+    .map(item => ({ ...item, status: getStockStatus(item.stock, threshold) }))
+    .filter(item => item.status.level === 'critical' ||
+                    item.status.level === 'empty'    ||
+                    item.status.level === 'low')
+    .sort((a, b) => a.stock - b.stock);
+}
+
+/** Update badge alert di sidebar */
+function updateAlertBadge() {
+  const alerts = computeAlerts();
+  const critical = alerts.filter(a => a.status.level === 'critical' || a.status.level === 'empty').length;
+  const badge    = document.getElementById('stockAlertBadge');
+
+  if (badge) {
+    if (critical > 0) {
+      badge.textContent = critical;
+      badge.style.display = '';
+      badge.className = 'nav-alert-badge critical';
+    } else if (alerts.length > 0) {
+      badge.textContent = alerts.length;
+      badge.style.display = '';
+      badge.className = 'nav-alert-badge warning';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  return alerts;
+}
+
+/** Tampilkan toast notification */
+function showAlertToast(alerts) {
+  const container = document.getElementById('alertToastContainer');
+  if (!container) return;
+
+  const critical = alerts.filter(a => a.status.level === 'critical' || a.status.level === 'empty');
+  const low      = alerts.filter(a => a.status.level === 'low');
+
+  // Jangan spam — hanya tampilkan kalau jumlah berubah
+  const totalNow = alerts.length;
+  if (totalNow === App.stock.lastAlertCount && App.stock.lastAlertCount > 0) return;
+  App.stock.lastAlertCount = totalNow;
+
+  if (totalNow === 0) return;
+
+  const toastId = 'toast_' + Date.now();
+  const toast   = document.createElement('div');
+  toast.className = 'alert-toast' + (critical.length > 0 ? ' critical' : ' warning');
+  toast.id = toastId;
+
+  toast.innerHTML = `
+    <div class="toast-header">
+      <i class="bi bi-${critical.length > 0 ? 'exclamation-octagon-fill' : 'exclamation-triangle-fill'}"></i>
+      <strong>${critical.length > 0 ? 'Stok Critical!' : 'Low Stock Alert'}</strong>
+      <button class="toast-close" onclick="document.getElementById('${toastId}')?.remove()">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+    <div class="toast-body">
+      ${critical.length > 0 ? `<div class="toast-line critical">
+        <i class="bi bi-x-octagon-fill"></i>
+        <span>${critical.length} item Critical/Habis</span>
+      </div>` : ''}
+      ${low.length > 0 ? `<div class="toast-line warning">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>${low.length} item Low Stock</span>
+      </div>` : ''}
+      <div class="toast-items">
+        ${alerts.slice(0, 3).map(a =>
+          `<span class="toast-item-tag ${a.status.level}">${a.item_code} (${a.stock})</span>`
+        ).join('')}
+        ${alerts.length > 3 ? `<span class="toast-item-tag more">+${alerts.length - 3} lainnya</span>` : ''}
+      </div>
+    </div>
+    <button class="toast-action" onclick="navigateTo('stock'); document.getElementById('${toastId}')?.remove()">
+      <i class="bi bi-arrow-right-circle"></i> Lihat Stock Master
+    </button>
+  `;
+
+  container.appendChild(toast);
+
+  // Auto dismiss setelah 8 detik
+  setTimeout(() => {
+    toast.classList.add('dismissing');
+    setTimeout(() => toast.remove(), 400);
+  }, 8000);
+}
+
+/** Jalankan alert check — dipanggil setelah data load & setiap auto refresh */
+function runAlertCheck() {
+  const alerts = updateAlertBadge();
+  // Tampilkan toast hanya kalau ada alert
+  if (alerts.length > 0) {
+    showAlertToast(alerts);
+  }
+}
+
 // ===================== TRANSACTION TABLE =====================
 
 /** Render transaction monitoring page */
@@ -1698,6 +2060,7 @@ function navigateTo(page) {
     machine:     'Machine Distribution',
     analytic:    'Analytic',
     transaction: 'Transaction Monitoring',
+    stock:       'Stock Master',
     setting:     'Setting',
   };
   const icons = {
@@ -1705,6 +2068,7 @@ function navigateTo(page) {
     machine:     'bi-gear-wide-connected',
     analytic:    'bi-bar-chart-line-fill',
     transaction: 'bi-table',
+    stock:       'bi-box-seam-fill',
     setting:     'bi-sliders2',
   };
 
@@ -1743,6 +2107,9 @@ function renderCurrentPage() {
       break;
     case 'transaction':
       renderTransactionPage();
+      break;
+    case 'stock':
+      renderStockMasterPage();
       break;
   }
 }
@@ -1974,7 +2341,8 @@ function initSettings() {
     const val = parseInt(document.getElementById('lowStockThreshold')?.value || '10');
     App.settings.lowStockThreshold = Math.max(1, val);
     saveSettings();
-    renderLowStock(App.data.filtered);
+    renderLowStock(App.data.filteredOutgoing);
+    runAlertCheck();
     // Visual feedback
     const btn = document.getElementById('saveLowStock');
     const orig = btn.innerHTML;
@@ -2006,6 +2374,7 @@ function startAutoRefresh() {
 
     await loadAllData();
     applyDateFilter();
+    runAlertCheck();  // Update alert badge & toast setelah refresh
 
     setTimeout(() => {
       if (icon) icon.classList.remove('spinning');
@@ -2036,6 +2405,7 @@ async function startApp() {
   initSettings();
   initMachineGroupFilter();
   initMachineSubNav();
+  initStockMasterControls();
 
   // 5. Run animation AND load data in parallel
   await Promise.all([
@@ -2052,6 +2422,8 @@ async function startApp() {
   setTimeout(() => {
     navigateTo('dashboard');
     startAutoRefresh();
+    // Alert check setelah data pertama kali load
+    setTimeout(runAlertCheck, 600);
   }, 400);
 }
 
