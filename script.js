@@ -2428,18 +2428,10 @@ async function startApp() {
 }
 
 async function init() {
-  // Init login UI dulu
+  // Selalu tampilkan login screen — tidak ada auto-login dari session
+  clearSession();
   initLogin();
-
-  // Cek kalau sudah ada session tersimpan
-  const session = loadSession();
-  if (session) {
-    currentUser = session;
-    hideLoginScreen();
-    await startApp();
-  } else {
-    showLoginScreen();
-  }
+  showLoginScreen();
 }
 
 // ===================== BOOT =====================
