@@ -2269,3 +2269,44 @@ body.light-mode .kpi-label { color: #475569; }
   font-size: 13px; font-weight: 600; color: var(--clr-blue);
   margin-bottom: 12px; padding: 0 4px;
 }
+
+/* ===================== TRANSACTION TABS ===================== */
+
+.trx-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.trx-tab-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 20px;
+  background: var(--clr-card);
+  border: 1px solid var(--clr-border);
+  border-radius: 10px;
+  color: var(--clr-text3);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.trx-tab-btn i { font-size: 14px; }
+
+.trx-tab-btn:hover {
+  background: rgba(30,144,255,0.06);
+  border-color: rgba(30,144,255,0.2);
+  color: var(--clr-text1);
+}
+
+.trx-tab-btn.active {
+  background: rgba(30,144,255,0.12);
+  border-color: rgba(30,144,255,0.4);
+  color: var(--clr-blue);
+  font-weight: 600;
+}
+
+.trx-tab-btn[data-tab="expense"].active {
+  background: rgba(245,158,11,0.1);
+  border-color: rgba(245,158,11,0.35);
+  color: var(--clr-orange);
+}
