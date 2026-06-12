@@ -1462,35 +1462,47 @@ function buildStockMaster(outgoing) {
 
     const code = r.item_code.trim();
 
+    // Parse tanggal row ini — skip kalau tidak valid
+    const d = parseDate(r.date);
+
     if (!itemMap[code]) {
       itemMap[code] = {
         item_code:  code,
         item_name:  r.item_name || code,
-        stock:      r.stock,
+        stock:      parseInt(r.stock) || 0,
         total_out:  0,
-        last_out:   '',
-        _lastDate:  null,
+        last_out:   d ? r.date : '',  // hanya isi kalau tanggalnya valid
+        _lastDate:  d || null,
       };
     }
 
     // Akumulasi total keluar
     itemMap[code].total_out += (parseInt(r.qty) || 0);
 
-    // Ambil stock dan tanggal terbaru
-    const d = parseDate(r.date);
-    if (d && (!itemMap[code]._lastDate || d >= itemMap[code]._lastDate)) {
-      itemMap[code]._lastDate = d;
-      itemMap[code].last_out  = r.date;
-      if (r.stock !== undefined && r.stock !== '') {
-        itemMap[code].stock = parseInt(r.stock) || 0;
+    // Update kalau tanggal row ini lebih baru atau sama
+    if (d) {
+      if (!itemMap[code]._lastDate || d >= itemMap[code]._lastDate) {
+        itemMap[code]._lastDate = d;
+        itemMap[code].last_out  = r.date;
+        // Update stock hanya dari baris yang punya nilai stock valid
+        if (r.stock !== '' && r.stock !== undefined && r.stock !== null) {
+          const s = parseInt(r.stock);
+          if (!isNaN(s)) itemMap[code].stock = s;
+        }
       }
     }
   });
 
-  return Object.values(itemMap).map(item => ({
-    ...item,
-    stock: parseInt(item.stock) || 0,
-  }));
+  return Object.values(itemMap).map(item => {
+    // Hapus field internal _lastDate dari output
+    const { _lastDate, ...rest } = item;
+    return {
+      ...rest,
+      stock:    parseInt(rest.stock) || 0,
+      // Pastikan last_out adalah string dd/mm/yyyy yang valid, bukan string kosong aneh
+      last_out: rest.last_out && parseDate(rest.last_out) ? rest.last_out : '-',
+    };
+  });
 }
 
 /** Tentukan status item berdasarkan threshold */
