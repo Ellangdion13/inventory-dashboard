@@ -1,13 +1,14 @@
-"Tanggal Pengambilan","Lokasi","Kode Item","Deskripsi","Mesin (Area)","Qty","UOM","Pemohon","Status","WR","WO","QTY
-Actual Stock","No Form","Cost Alocation","Yang
-Menyerahkan"
-"11/06/2026","613","SPPIVA0195","Solenoid Valve 200-4E1 Koganei","ILAPAK 1","","EA","MRA","","","","1","","MTC","WIDYAN"
-"11/06/2026","613","SPPIVA0172","Solenoid Valve MFH-5-1/8B Festo","ILAPAK 2","","EA","MRA","","","","5","","MTC","WIDYAN"
-"11/06/2026","613","SPPIVA0171","Presure Regulating Valve 1/2î","ILAPAK 3","","EA","MRA","","","","0","","MTC","WIDYAN"
-"11/06/2026","613","SPPIVA0082","Solenoid Valve US-25 220V 1î UNI-D","ILAPAK 4","","EA","MRA","","","","0","","MTC","WIDYAN"
-"12/06/2026","521","SPECSW0013","Micro Toggle Switch 10 A 250 VAC","ILAPAK 4","","EA","Ardifan","","678324","","4","","MTC","WIDYAN"
-"12/06/2026","521","SPECSW0143","Switch D4D-1162 OMRON","ILAPAK 5","","EA","Ardifan","","678324","","0","","MTC","WIDYAN"
-"12/06/2026","521","SPECSW0031","Pushbutton XB5-AW21 (Warna Hitam) Telemecanique","ILAPAK 6","","EA","Ardifan","","678324","","0","","MTC","WIDYAN"
-"12/06/2026","521","SPECSW0122","Discharge Operation Switch 41 V Humphrey","ILAPAK 7","","EA","Ardifan","","678324","","0","","MTC","WIDYAN"
-"12/06/2026","521","SPECSW0029","Pushbutton XB5-AW33 (Warna Hijau) Telemecanique","ILAPAK 8","","EA","Ardifan","","678324","","5","","MTC","WIDYAN"
-"12/06/2026","521","SPECSW0004","Pushbutton ZB4 BA3 (089574 x 1) Telemecanique","ILAPAK 9","","EA","Ardifan","","678324","","5","","MTC","WIDYAN"
+ÔªøTanggal Pengambilan,Lokasi,Kode Item,Deskripsi,Mesin (Area),Qty,UOM,Pemohon,Status,WR,WO,"QTY
+Actual Stock",No Form,Cost Alocation,"Yang
+Menyerahkan",,,,,,
+46184,613,SPPIVA0195,Solenoid Valve 200-4E1 Koganei,ILAPAK 1,,EA,MRA,,,,1,,MTC,WIDYAN,,,,,,
+46184,613,SPPIVA0172,Solenoid Valve MFH-5-1/8B Festo,ILAPAK 2,,EA,MRA,,,,5,,MTC,WIDYAN,,CLICK TOMBOL INI JIKA ADA UPDATE MANUAL!,,,,CAUTION!!
+46184,613,SPPIVA0171,Presure Regulating Valve 1/2‚Äù,ILAPAK 3,,EA,MRA,,,,0,,MTC,WIDYAN,,,,,,
+46184,613,SPPIVA0082,Solenoid Valve US-25 220V 1‚Äù UNI-D,ILAPAK 4,,EA,MRA,,,,0,,MTC,WIDYAN,,,,,,1. Pastikan 
+46185,521,SPECSW0013,Micro Toggle Switch 10 A 250 VAC,ILAPAK 4,,EA,Ardifan,,678324,,4,,MTC,WIDYAN,,,,,,
+46185,521,SPECSW0143,Switch D4D-1162 OMRON,ILAPAK 5,,EA,Ardifan,,678324,,0,,MTC,WIDYAN,,,,,,
+46185,521,SPECSW0031,Pushbutton XB5-AW21 (Warna Hitam) Telemecanique,ILAPAK 6,,EA,Ardifan,,678324,,0,,MTC,WIDYAN,,,,,,
+46185,521,SPECSW0122,Discharge Operation Switch 41 V Humphrey,ILAPAK 7,,EA,Ardifan,,678324,,0,,MTC,WIDYAN,,,,,,
+46185,521,SPECSW0029,Pushbutton XB5-AW33 (Warna Hijau) Telemecanique,ILAPAK 8,,EA,Ardifan,,678324,,5,,MTC,WIDYAN,,,,,,
+46185,521,SPECSW0004,Pushbutton ZB4 BA3 (089574 x 1) Telemecanique,ILAPAK 9,,EA,Ardifan,,678324,,5,,MTC,WIDYAN,,,,,,
+46185,521,SPECSW0031,Pushbutton XB5-AW21 (Warna Hitam) Telemecanique,SIG 6,,EA,SIGIT,,214113,,0,,UTL,SUPERVISOR,,,,,,
