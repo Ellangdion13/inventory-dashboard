@@ -38,7 +38,7 @@ const App = {
 const AUTH_KEY = 'btkch_auth_session';
 
 const USERS = [
-  { username: 'admin',    password: 'admin123',  role: 'admin', name: 'Admin Sparepart', dept: 'Maintenance' },
+  { username: 'admin',    password: 'admin123',  role: 'admin', name: 'Admin Sparepart', dept: 'Sparepart' },
   { username: 'user',      password: 'user123',    role: 'user',  name: 'USER',             dept: 'General' },
 ];
 
