@@ -8,9 +8,11 @@
 // ===================== GLOBAL STATE =====================
 const App = {
   data: {
-    outgoing: [],       // Raw parsed CSV data
-    expense: [],        // Raw expense CSV data
-    filtered: [],       // After date/filter applied
+    outgoing: [],         // Raw parsed CSV data
+    expense: [],          // Raw expense CSV data
+    filtered: [],         // Gabungan outgoing+expense, after date filter
+    filteredOutgoing: [], // Hanya outgoing, after date filter (untuk dashboard)
+    filteredExpense: [],  // Hanya expense, after date filter (untuk trx tab expense)
   },
   settings: {
     lowStockThreshold: 10,
@@ -27,6 +29,7 @@ const App = {
     trxSortDir: 'desc',
     filterFrom: null,
     filterTo: null,
+    currentTrxTab: 'outgoing', // 'outgoing' | 'expense'
   },
   charts: {},           // Chart.js instances
   intervals: {},        // setInterval references
@@ -532,14 +535,20 @@ function applyDateFilter() {
   const from = App.ui.filterFrom;
   const to   = App.ui.filterTo;
 
-  App.data.filtered = getAllData().filter(row => {
+  function inRange(row) {
     if (!row.date) return false;
     const d = parseDate(row.date);
     if (!d) return false;
     if (from && d < from) return false;
     if (to   && d > to)   return false;
     return true;
-  });
+  }
+
+  // Gabungan untuk analytic & machine
+  App.data.filtered         = getAllData().filter(inRange);
+  // Terpisah untuk dashboard (outgoing only) & transaction tabs
+  App.data.filteredOutgoing = App.data.outgoing.filter(inRange);
+  App.data.filteredExpense  = App.data.expense.filter(inRange);
 
   renderCurrentPage();
 }
@@ -1437,13 +1446,23 @@ function renderSparepartPerMachine(data) {
 
 /** Render transaction monitoring page */
 function renderTransactionPage() {
-  const data      = App.data.filtered.length > 0 ? App.data.filtered : App.data.outgoing;
+  // Sumber data sesuai tab aktif
+  const tab  = App.ui.currentTrxTab || 'outgoing';
+  const data = tab === 'expense'
+    ? (App.data.filteredExpense.length > 0 ? App.data.filteredExpense : App.data.expense)
+    : (App.data.filteredOutgoing.length > 0 ? App.data.filteredOutgoing : App.data.outgoing);
+
+  // Sync active tab UI
+  document.querySelectorAll('.trx-tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+
   const search    = (document.getElementById('trxSearch')?.value || '').toLowerCase();
   const machine   = document.getElementById('trxFilterMachine')?.value   || '';
   const requester = document.getElementById('trxFilterRequester')?.value || '';
 
-  // Populate filter dropdowns (once)
-  populateFilterDropdowns(data);
+  // Reset dropdown saat tab ganti supaya terisi ulang sesuai data tab
+  populateFilterDropdowns(data, true);
 
   // Filter rows
   let rows = data.filter(r => {
@@ -1526,14 +1545,18 @@ function renderTransactionPage() {
   App.trxFilteredData = rows; // Store for export
 }
 
-function populateFilterDropdowns(data) {
+function populateFilterDropdowns(data, forceReset = false) {
   const mEl = document.getElementById('trxFilterMachine');
   const rEl = document.getElementById('trxFilterRequester');
-  // Pakai ALL data (outgoing + expense) supaya dropdown lengkap
-  const allData = getAllData();
+
+  // Reset dropdown kalau forceReset (saat ganti tab)
+  if (forceReset) {
+    if (mEl) { while (mEl.options.length > 1) mEl.remove(1); }
+    if (rEl) { while (rEl.options.length > 1) rEl.remove(1); }
+  }
 
   if (mEl && mEl.options.length <= 1) {
-    const machines = [...new Set(allData.map(r => r.machine).filter(Boolean))].sort();
+    const machines = [...new Set(data.map(r => r.machine).filter(Boolean))].sort();
     machines.forEach(m => {
       const opt = document.createElement('option');
       opt.value = m; opt.textContent = m;
@@ -1542,7 +1565,7 @@ function populateFilterDropdowns(data) {
   }
 
   if (rEl && rEl.options.length <= 1) {
-    const reqs = [...new Set(allData.map(r => r.requester).filter(Boolean))].sort();
+    const reqs = [...new Set(data.map(r => r.requester).filter(Boolean))].sort();
     reqs.forEach(r => {
       const opt = document.createElement('option');
       opt.value = r; opt.textContent = r;
@@ -1700,14 +1723,17 @@ function navigateTo(page) {
 }
 
 function renderCurrentPage() {
-  const data = App.data.filtered;
+  const data         = App.data.filtered;          // gabungan (machine, analytic)
+  const dataOutgoing = App.data.filteredOutgoing;  // outgoing only (dashboard)
+
   switch (App.ui.currentPage) {
     case 'dashboard':
-      renderKPIs(data);
-      renderTrendChart(data);
-      renderMachineDonut(data);
-      renderLowStock(data);
-      renderRecentTransactions(data);
+      // Dashboard HANYA pakai data outgoing — expense tidak masuk
+      renderKPIs(dataOutgoing);
+      renderTrendChart(dataOutgoing);
+      renderMachineDonut(dataOutgoing);
+      renderLowStock(dataOutgoing);
+      renderRecentTransactions(dataOutgoing);
       break;
     case 'machine':
       renderMachinePage(data);
@@ -1797,6 +1823,9 @@ function initFilterControls() {
     document.getElementById('filterDateFrom').value = '';
     document.getElementById('filterDateTo').value   = '';
     App.data.filtered = getAllData();
+    documen
+    App.data.filteredOutgoing = [...App.data.outgoing];
+    App.data.filteredExpense  = [...App.data.expense];
     document.querySelectorAll('.qbtn').forEach(b => b.classList.remove('active'));
     document.querySelector('.qbtn[data-range="all"]')?.classList.add('active');
     renderCurrentPage();
@@ -1806,6 +1835,22 @@ function initFilterControls() {
 // ===================== TRANSACTION SEARCH/FILTER =====================
 
 function initTransactionControls() {
+  // Tab switch — Outgoing vs Expense
+  document.querySelectorAll('.trx-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      App.ui.currentTrxTab  = btn.dataset.tab;
+      App.ui.currentTrxPage = 1;
+      // Reset search & filter saat ganti tab
+      const searchEl = document.getElementById('trxSearch');
+      const machineEl = document.getElementById('trxFilterMachine');
+      const requesterEl = document.getElementById('trxFilterRequester');
+      if (searchEl) searchEl.value = '';
+      if (machineEl) machineEl.value = '';
+      if (requesterEl) requesterEl.value = '';
+      renderTransactionPage();
+    });
+  });
+
   document.getElementById('trxSearch')?.addEventListener('input', () => {
     App.ui.currentTrxPage = 1;
     renderTransactionPage();
@@ -1999,7 +2044,9 @@ async function startApp() {
   ]);
 
   // 6. Both done — finish animation, then render
-  App.data.filtered = getAllData();
+  App.data.filtered         = getAllData();
+  App.data.filteredOutgoing = [...App.data.outgoing];
+  App.data.filteredExpense  = [...App.data.expense];
   finishLoading();
 
   setTimeout(() => {
