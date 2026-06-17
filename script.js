@@ -467,16 +467,35 @@ function loadMasterCSV(path) {
             });
             return clean;
           })
-          .filter(row => (row['Kode Item'] || '').trim() !== '')
+          // Cari field secara case-insensitive + dukung beberapa alias nama kolom,
+          // karena header datamaster.csv asli pakai "New Code" / "Item Name" / "STOCK"
+          // (bukan "Kode Item" / "Deskripsi" / "Stock")
           .map(row => {
-            const rawStock = row['Stock'] || row['QTY'] || row['Stok'] || '';
-            const stockNum = parseFloat(rawStock);
+            const findField = (...names) => {
+              const keys = Object.keys(row);
+              for (const name of names) {
+                const k = keys.find(kk => kk.toLowerCase() === name.toLowerCase());
+                if (k && row[k] !== '') return row[k];
+              }
+              return '';
+            };
             return {
-              item_code: row['Kode Item'] || '',
-              item_name: row['Deskripsi'] || '',
-              lokasi:    row['Lokasi']    || '',
+              item_code: findField('New Code', 'Kode Item', 'Item Code', 'Kode'),
+              item_name: findField('Item Name', 'Deskripsi', 'Description'),
+              lokasi:    findField('Lokasi', 'Location'),
+              rawStock:  findField('STOCK', 'Stock', 'QTY', 'Stok'),
+              uom:       findField('UOM', 'Satuan'),
+            };
+          })
+          .filter(row => row.item_code.trim() !== '')
+          .map(row => {
+            const stockNum = parseFloat(row.rawStock);
+            return {
+              item_code: row.item_code,
+              item_name: row.item_name,
+              lokasi:    row.lokasi,
               stock:     isNaN(stockNum) ? 0 : stockNum,
-              uom:       row['UOM']       || '',
+              uom:       row.uom,
             };
           });
         console.log('MASTER loaded:', rows.length);
@@ -1596,11 +1615,30 @@ function getStockStatus(stock, threshold) {
   return                                   { level: 'ok',       label: 'Aman',       color: '#00e5a0' };
 }
 
+/** Update badge "terakhir sync" di halaman Stock Master */
+function updateStockSyncBadge() {
+  const badge = document.getElementById('stockSyncBadge');
+  const timeEl = document.getElementById('stockSyncTime');
+  if (!timeEl) return;
+  const now = new Date();
+  const hh  = String(now.getHours()).padStart(2, '0');
+  const mm  = String(now.getMinutes()).padStart(2, '0');
+  const ss  = String(now.getSeconds()).padStart(2, '0');
+  timeEl.textContent = `Update terakhir: ${hh}:${mm}:${ss}`;
+
+  // Kasih efek visual sebentar biar terlihat baru "berkedip"
+  if (badge) {
+    badge.classList.add('syncing');
+    setTimeout(() => badge.classList.remove('syncing'), 600);
+  }
+}
+
 /** Render halaman Stock Master */
 function renderStockMasterPage() {
   const threshold = App.settings.lowStockThreshold;
   const master    = buildStockMaster(App.data.outgoing);
   App.data.stockMaster = master;
+  updateStockSyncBadge();
 
   // ── KPI ──
   const total    = master.length;
