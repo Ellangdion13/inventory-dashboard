@@ -793,15 +793,17 @@ function renderTrendChart(data) {
         x: { grid: { color: 'rgba(255,255,255,0.04)' }, border: { display: false } },
         y: {
           type: 'linear', position: 'left',
+          beginAtZero: true,
           grid: { color: 'rgba(255,255,255,0.05)' },
           border: { display: false },
-          ticks: { font: { size: 11 } },
+          ticks: { font: { size: 11 }, precision: 0 },
         },
         y1: {
           type: 'linear', position: 'right',
+          beginAtZero: true,
           grid: { display: false },
           border: { display: false },
-          ticks: { font: { size: 11 } },
+          ticks: { font: { size: 11 }, precision: 0 },
         },
       },
     },
@@ -1096,7 +1098,12 @@ function renderMachineBarChart(data) {
       },
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.04)' }, border: { display: false } },
-        y: { grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false } },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          border: { display: false },
+          ticks: { precision: 0 },
+        },
       },
     },
   });
@@ -1233,7 +1240,12 @@ function renderMachineTrendChart(data) {
       },
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.04)' }, border: { display: false } },
-        y: { grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false } },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          border: { display: false },
+          ticks: { precision: 0 },
+        },
       },
     },
   });
@@ -1297,7 +1309,12 @@ function renderTop10Chart(data) {
         tooltip: { callbacks: { label: c => ` Qty: ${fmtNum(c.raw)}` } },
       },
       scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.04)' }, border: { display: false } },
+        x: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          border: { display: false },
+          ticks: { precision: 0 },
+        },
         y: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11 } } },
       },
     },
@@ -1427,7 +1444,12 @@ function renderItemTrendChart(data) {
       },
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.04)' }, border: { display: false } },
-        y: { grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false } },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          border: { display: false },
+          ticks: { precision: 0 },
+        },
       },
     },
   });
