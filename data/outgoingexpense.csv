@@ -1,10 +1,16 @@
-"Tanggal Pengambilan","Lokasi","Kode Item","Deskripsi","Mesin (Area)","Qty","UOM","Pemohon","Status","WR","WO","QTY
-Actual Stock","No Form","Cost Alocation","Yang
-Menyerahkan"
-"12/06/2026","E22","E-SPNT0087","Gear DA= 37.5mm, DL= 102mm, Z= 50","UNIFIL A","","EA","Bagas","","965432","","2","","PRODUKSI","WIDYAN"
-"12/06/2026","E22","E-SPNT0087","Chain Wheel p/n 2750 101 011","UNIFIL A","","EA","Bagas","","965432","","4","","PRODUKSI","WIDYAN"
-"12/06/2026","E22","E-SPNT0087","Chain Wheel p/n 2750 101 036","UNIFIL A","","EA","Bagas","","965432","","4","","PRODUKSI","WIDYAN"
-"12/06/2026","E22","E-SPNT0087","Gear DA= 22mm, DL= 104mm, Z= 50","UNIFIL A","","EA","Bagas","","965432","","1","","PRODUKSI","WIDYAN"
-"12/06/2026","E22","E-SPNT0087","Chain Wheel p/n 2750 101 021","UNIFIL A","","EA","Bagas","","965432","","2","","PRODUKSI","WIDYAN"
-"12/06/2026","E22","E-SPNT0087","Gear DA= 22mm, DL= 60mm, Z1= 18, Z2 = 28","UNIFIL A","","EA","Bagas","","965432","","1","","PRODUKSI","WIDYAN"
-"12/06/2026","E22","E-SPNT0087","Chain Wheel p/n 2750 101 088","UNIFIL A","","EA","Bagas","","997652","","1","","PRODUKSI","WIDYAN"
+﻿Tanggal Pengambilan,Lokasi,Kode Item,Deskripsi,Mesin (Area),Qty,UOM,Pemohon,Status,WR,WO,"QTY
+Actual Stock",No Form,Cost Alocation,"Yang
+Menyerahkan",,,,,,
+12/6/2026,E22,E-SPNT0087,"Gear DA= 37.5mm, DL= 102mm, Z= 50",UNIFIL A,,EA,Bagas,,965432,,2,,PRODUKSI,WIDYAN,,,,,,
+12/6/2026,E22,E-SPNT0087,Chain Wheel p/n 2750 101 011,UNIFIL A,,EA,Bagas,,965432,,4,,PRODUKSI,WIDYAN,,CLICK TOMBOL INI JIKA ADA UPDATE MANUAL!,,,,CAUTION!!
+12/6/2026,E22,E-SPNT0087,Chain Wheel p/n 2750 101 036,UNIFIL A,,EA,Bagas,,965432,,4,,PRODUKSI,WIDYAN,,,,,,
+12/6/2026,E22,E-SPNT0087,"Gear DA= 22mm, DL= 104mm, Z= 50",UNIFIL A,,EA,Bagas,,965432,,1,,PRODUKSI,WIDYAN,,,,,,"1. Pastikan di Sheet FORM sudah mengisi semua bagian kosong
+
+2. Pastikan sudah menekan tombol APROVE - sampai pop up ""Data berhasil diproses"" timbul/ditampilkan
+
+3. Jika ada data yang ditambahkan/dihapus secara manual, pastikan menekan tombol ""Update outgoing csv"" disamping
+
+4. Setelah menekan tombol disamping, buka file ""PUSH DASHBOARD"" agar data di dashboard ter-update"
+12/6/2026,E22,E-SPNT0087,Chain Wheel p/n 2750 101 021,UNIFIL A,,EA,Bagas,,965432,,2,,PRODUKSI,WIDYAN,,,,,,
+12/6/2026,E22,E-SPNT0087,"Gear DA= 22mm, DL= 60mm, Z1= 18, Z2 = 28",UNIFIL A,,EA,Bagas,,965432,,1,,PRODUKSI,WIDYAN,,,,,,
+12/6/2026,E22,E-SPNT0087,Chain Wheel p/n 2750 101 088,UNIFIL A,,EA,Bagas,,997652,,1,,PRODUKSI,WIDYAN,,,,,,
