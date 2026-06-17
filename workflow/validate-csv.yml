@@ -1,0 +1,46 @@
+name: Validasi CSV
+
+# Workflow ini berjalan otomatis setiap kali ada push yang mengubah berkas
+# di folder data/ — termasuk hasil export VBA Macro yang di-push manual.
+# Tujuannya menangkap CSV yang rusak/format berubah SEBELUM data tersebut
+# "resmi" tersaji ke pengguna dashboard, tanpa memerlukan server apa pun
+# (workflow ini berjalan di infrastruktur GitHub, gratis untuk repo publik
+# dan punya kuota gratis bulanan untuk repo privat).
+
+on:
+  push:
+    paths:
+      - 'data/**.csv'
+      - 'scripts/validate_csv.py'
+      - '.github/workflows/validate-csv.yml'
+  pull_request:
+    paths:
+      - 'data/**.csv'
+      - 'scripts/validate_csv.py'
+  # Memungkinkan menjalankan validasi secara manual dari tab Actions di GitHub
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Cek struktur & validitas CSV
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Jalankan validasi CSV
+        run: python3 scripts/validate_csv.py
+
+      - name: Ringkasan jika gagal
+        if: failure()
+        run: |
+          echo "::error::Validasi CSV gagal. Periksa log di atas untuk detail berkas dan baris yang bermasalah."
+          echo "Catatan: kegagalan ini TIDAK menghapus data lama di branch — commit yang bermasalah tetap"
+          echo "tersimpan di histori Git, tapi tim sebaiknya memperbaiki/menambah commit susulan"
+          echo "sebelum mengandalkan data ini di dashboard production."
