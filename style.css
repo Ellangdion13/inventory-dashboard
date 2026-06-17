@@ -777,6 +777,78 @@ body {
   pointer-events: none;
 }
 
+/* ===================== DATA STATUS BANNER ===================== */
+.data-status-banner {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 24px 0;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  border: 1px solid var(--clr-border2);
+  background: var(--clr-surface2);
+  animation: dsb-in 0.25s ease;
+}
+.data-status-banner.show { display: flex; }
+
+.data-status-banner .dsb-icon {
+  flex: 0 0 auto;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+}
+
+.data-status-banner .dsb-body { flex: 1; min-width: 0; }
+.data-status-banner .dsb-title { font-weight: 600; color: var(--clr-text); margin-bottom: 2px; }
+.data-status-banner .dsb-desc  { color: var(--clr-text2); }
+
+.data-status-banner .dsb-dismiss {
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  color: var(--clr-text2);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: var(--transition);
+}
+.data-status-banner .dsb-dismiss:hover {
+  background: var(--clr-surface);
+  color: var(--clr-text);
+}
+
+/* Variants */
+.data-status-banner.dsb-ok {
+  border-color: rgba(0,229,160,0.25);
+  background: rgba(0,229,160,0.06);
+}
+.data-status-banner.dsb-ok .dsb-icon { background: var(--clr-green-glow); color: var(--clr-green); }
+
+.data-status-banner.dsb-warning {
+  border-color: rgba(245,158,11,0.3);
+  background: rgba(245,158,11,0.07);
+}
+.data-status-banner.dsb-warning .dsb-icon { background: rgba(245,158,11,0.18); color: var(--clr-orange); }
+
+.data-status-banner.dsb-error {
+  border-color: rgba(239,68,68,0.3);
+  background: rgba(239,68,68,0.07);
+}
+.data-status-banner.dsb-error .dsb-icon { background: rgba(239,68,68,0.18); color: var(--clr-red); }
+
+@keyframes dsb-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .data-status-banner { margin: 12px 12px 0; padding: 10px 14px; }
+}
+
 /* ===================== FILTER BAR ===================== */
 .filter-bar {
   display: flex;

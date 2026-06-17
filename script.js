@@ -42,6 +42,12 @@ const App = {
   },
   charts: {},           // Chart.js instances
   intervals: {},        // setInterval references
+  dataHealth: {
+    lastRowCounts: null,   // { outgoing, expense, master } dari load sebelumnya, utk deteksi anomali
+    lastLoadOk: true,
+    lastLoadError: null,
+    latestDataDate: null,  // Date object — tanggal transaksi terbaru di CSV
+  },
 };
 
 
@@ -442,11 +448,112 @@ async function loadAllData() {
 
     console.log('Outgoing:', outgoing.length, '| Expense:', expense.length, '| Master:', master.length);
 
+    // ── Validasi dasar + deteksi anomali, lalu tampilkan status ke pengguna ──
+    App.dataHealth.lastLoadOk = true;
+    App.dataHealth.lastLoadError = null;
+    App.dataHealth.latestDataDate = computeLatestDataDate(outgoing, expense);
+    evaluateDataHealth({ outgoing, expense, master });
+
     return true;
   } catch (err) {
     console.error('Data load error:', err);
+    App.dataHealth.lastLoadOk = false;
+    App.dataHealth.lastLoadError = (err && err.message) ? err.message : String(err);
+    showDataStatusBanner('error', 'Gagal memuat data', 'Terjadi kesalahan saat mengambil berkas CSV. Dashboard menampilkan data terakhir yang berhasil dimuat sebelumnya (jika ada).');
     return false;
   }
+}
+
+/** Cari tanggal transaksi terbaru di antara outgoing + expense (sumber kebenaran "data per tanggal berapa") */
+function computeLatestDataDate(outgoing, expense) {
+  let latest = null;
+  [...outgoing, ...expense].forEach(row => {
+    const d = parseDate(row.date);
+    if (d && (!latest || d > latest)) latest = d;
+  });
+  return latest;
+}
+
+/**
+ * Validasi dasar & deteksi anomali setelah data CSV dimuat.
+ * Tidak menghentikan aplikasi — hanya menampilkan peringatan yang jelas ke pengguna,
+ * supaya kesalahan pada proses macro/export tidak diteruskan secara diam-diam ke dashboard.
+ */
+function evaluateDataHealth({ outgoing, expense, master }) {
+  const prev = App.dataHealth.lastRowCounts;
+  const curr = { outgoing: outgoing.length, expense: expense.length, master: master.length };
+
+  // 1) Data kosong total — kemungkinan CSV gagal/rusak
+  if (curr.outgoing === 0 && curr.expense === 0) {
+    showDataStatusBanner('error', 'Data outgoing kosong',
+      'Berkas outgoing.csv dan outgoingexpense.csv tidak memuat data sama sekali. Periksa apakah proses export macro berjalan dengan benar.');
+    App.dataHealth.lastRowCounts = curr;
+    return;
+  }
+
+  if (curr.master === 0) {
+    showDataStatusBanner('warning', 'Data master stok tidak terbaca',
+      'datamaster.csv kosong atau gagal dibaca. Status Stock Master mungkin tidak akurat sampai berkas ini diperbaiki.');
+    App.dataHealth.lastRowCounts = curr;
+    return;
+  }
+
+  // 2) Penurunan jumlah baris yang drastis dibanding load sebelumnya (indikasi CSV terpotong/rusak)
+  if (prev) {
+    const dropRatio = (key) => prev[key] > 0 ? (prev[key] - curr[key]) / prev[key] : 0;
+    const flagged = ['outgoing', 'expense', 'master'].filter(key => dropRatio(key) >= 0.5 && prev[key] >= 10);
+    if (flagged.length > 0) {
+      const label = { outgoing: 'outgoing.csv', expense: 'outgoingexpense.csv', master: 'datamaster.csv' };
+      const names = flagged.map(k => label[k]).join(', ');
+      showDataStatusBanner('warning', 'Jumlah data turun drastis',
+        `Jumlah baris pada ${names} turun lebih dari 50% dibanding pemuatan sebelumnya. Ini bisa jadi normal (mis. reset periode), tapi sebaiknya dicek agar bukan akibat data terpotong.`);
+      App.dataHealth.lastRowCounts = curr;
+      return;
+    }
+  }
+
+  // 3) Semua aman — tampilkan status normal dengan tanggal data terbaru
+  const dateLabel = App.dataHealth.latestDataDate ? fmtDate(App.dataHealth.latestDataDate) : 'tidak terdeteksi';
+  showDataStatusBanner('ok', 'Data sinkron',
+    `Data terbaru tercatat per ${dateLabel}. ${fmtNum(curr.outgoing + curr.expense)} transaksi termuat dari repository.`);
+
+  App.dataHealth.lastRowCounts = curr;
+}
+
+/** Tampilkan banner status data di bagian atas halaman (persisten di semua tab) */
+function showDataStatusBanner(type, title, desc) {
+  const banner = document.getElementById('dataStatusBanner');
+  const iconEl = document.getElementById('dsbIcon');
+  const titleEl = document.getElementById('dsbTitle');
+  const descEl = document.getElementById('dsbDesc');
+  if (!banner) return;
+
+  banner.classList.remove('dsb-ok', 'dsb-warning', 'dsb-error');
+  banner.classList.add('dsb-' + type, 'show');
+
+  const icons = {
+    ok:      'bi-check-circle-fill',
+    warning: 'bi-exclamation-triangle-fill',
+    error:   'bi-x-octagon-fill',
+  };
+  if (iconEl) iconEl.innerHTML = `<i class="bi ${icons[type] || icons.ok}"></i>`;
+  if (titleEl) titleEl.textContent = title;
+  if (descEl) descEl.textContent = desc;
+
+  // Banner "ok" otomatis hilang setelah beberapa saat agar tidak mengganggu;
+  // banner warning/error tetap tampil sampai pengguna menutup atau status berubah.
+  clearTimeout(App.intervals.bannerAutoHide);
+  if (type === 'ok') {
+    App.intervals.bannerAutoHide = setTimeout(() => {
+      banner.classList.remove('show');
+    }, 6000);
+  }
+}
+
+function initDataStatusBanner() {
+  document.getElementById('dsbDismiss')?.addEventListener('click', () => {
+    document.getElementById('dataStatusBanner')?.classList.remove('show');
+  });
 }
 
 /** Load DATA MASTER CSV — kolom: Kode Item, Deskripsi, Lokasi, Stock, UOM */
@@ -1637,16 +1744,19 @@ function getStockStatus(stock, threshold) {
   return                                   { level: 'ok',       label: 'Aman',       color: '#00e5a0' };
 }
 
-/** Update badge "terakhir sync" di halaman Stock Master */
+/** Update badge "data per tanggal berapa" di halaman Stock Master.
+ *  Sebelumnya menampilkan jam render browser — sekarang menampilkan tanggal
+ *  transaksi terbaru yang benar-benar ada di CSV, agar tidak menyesatkan
+ *  (jam render browser tidak mencerminkan kapan data sebenarnya terakhir diperbarui). */
 function updateStockSyncBadge() {
   const badge = document.getElementById('stockSyncBadge');
   const timeEl = document.getElementById('stockSyncTime');
   if (!timeEl) return;
-  const now = new Date();
-  const hh  = String(now.getHours()).padStart(2, '0');
-  const mm  = String(now.getMinutes()).padStart(2, '0');
-  const ss  = String(now.getSeconds()).padStart(2, '0');
-  timeEl.textContent = `Update terakhir: ${hh}:${mm}:${ss}`;
+
+  const latest = App.dataHealth.latestDataDate;
+  timeEl.textContent = latest
+    ? `Data per: ${fmtDate(latest)}`
+    : 'Tanggal data tidak terdeteksi';
 
   // Kasih efek visual sebentar biar terlihat baru "berkedip"
   if (badge) {
@@ -2561,6 +2671,7 @@ async function startApp() {
   initMachineGroupFilter();
   initMachineSubNav();
   initStockMasterControls();
+  initDataStatusBanner();
 
   // 5. Run animation AND load data in parallel
   await Promise.all([
