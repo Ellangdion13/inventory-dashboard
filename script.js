@@ -10,10 +10,11 @@ const App = {
   data: {
     outgoing: [],         // Raw parsed CSV data
     expense: [],          // Raw expense CSV data
+    master: [],           // DATA MASTER langsung dari datamaster.csv
     filtered: [],         // Gabungan outgoing+expense, after date filter
     filteredOutgoing: [], // Hanya outgoing, after date filter (untuk dashboard)
     filteredExpense: [],  // Hanya expense, after date filter (untuk trx tab expense)
-    stockMaster: [],      // Computed stock master dari outgoing data
+    stockMaster: [],      // Stock master final (dari master CSV)
   },
   settings: {
     lowStockThreshold: 10,
@@ -216,8 +217,9 @@ function initLogin() {
 }
 
 // ===================== CSV FILE PATHS =====================
-const CSV_OUTGOING = './data/outgoing.csv';
-const CSV_EXPENSE  = './data/outgoingexpense.csv';
+const CSV_OUTGOING   = './data/outgoing.csv';
+const CSV_EXPENSE    = './data/outgoingexpense.csv';
+const CSV_DATAMASTER = './data/datamaster.csv';
 
 // ===================== CHART.JS GLOBAL DEFAULTS =====================
 Chart.defaults.color = '#94a3b8';
@@ -424,18 +426,21 @@ function startClock() {
 /** Load and parse both CSV files */
 async function loadAllData() {
   try {
-    const [outgoing, expense] = await Promise.all([
+    const [outgoing, expense, master] = await Promise.all([
       loadCSV(CSV_OUTGOING),
       loadCSV(CSV_EXPENSE),
+      loadMasterCSV(CSV_DATAMASTER),
     ]);
 
     App.data.outgoing = outgoing;
     App.data.expense  = expense;
-    // filtered set setelah init via getAllData()
+    App.data.master   = master;
 
-    // Mark data source status
     setDsStatus('dsOutgoingStatus', outgoing.length > 0);
     setDsStatus('dsExpenseStatus',  expense.length  > 0);
+    setDsStatus('dsMasterStatus',   master.length   > 0);
+
+    console.log('Outgoing:', outgoing.length, '| Expense:', expense.length, '| Master:', master.length);
 
     return true;
   } catch (err) {
@@ -443,6 +448,48 @@ async function loadAllData() {
     return false;
   }
 }
+
+/** Load DATA MASTER CSV — kolom: Kode Item, Deskripsi, Lokasi, Stock, UOM */
+function loadMasterCSV(path) {
+  return new Promise((resolve) => {
+    Papa.parse(path, {
+      download:       true,
+      header:         true,
+      skipEmptyLines: true,
+      delimiter:      ',',
+      complete: (results) => {
+        const rows = results.data
+          .map(row => {
+            const clean = {};
+            Object.keys(row).forEach(k => {
+              clean[k.replace(/^﻿/, '').replace(/[\r\n]+/g, ' ').trim()] =
+                (row[k] || '').toString().trim();
+            });
+            return clean;
+          })
+          .filter(row => (row['Kode Item'] || '').trim() !== '')
+          .map(row => {
+            const rawStock = row['Stock'] || row['QTY'] || row['Stok'] || '';
+            const stockNum = parseFloat(rawStock);
+            return {
+              item_code: row['Kode Item'] || '',
+              item_name: row['Deskripsi'] || '',
+              lokasi:    row['Lokasi']    || '',
+              stock:     isNaN(stockNum) ? 0 : stockNum,
+              uom:       row['UOM']       || '',
+            };
+          });
+        console.log('MASTER loaded:', rows.length);
+        resolve(rows);
+      },
+      error: (err) => {
+        console.warn('datamaster.csv error:', err);
+        resolve([]);
+      },
+    });
+  });
+}
+
 
 // ===================== FIX: loadCSV — struktur Promise & callback diperbaiki =====================
 /** Load a single CSV file using PapaParse */
@@ -1467,56 +1514,78 @@ function renderSparepartPerMachine(data) {
 
 // ===================== STOCK MASTER =====================
 
-/** Bangun stock master dari data outgoing — ambil stock terbaru per item */
+/** Bangun stock master dari DATA MASTER CSV + enrichment dari outgoing history */
 function buildStockMaster(outgoing) {
-  const itemMap = {};
+  // Kalau datamaster.csv sudah ter-load, pakai itu sebagai sumber utama
+  const masterSource = App.data.master && App.data.master.length > 0
+    ? App.data.master
+    : null;
 
+  // Build lookup total_out & last_out dari outgoing history
+  const histMap = {};
   outgoing.forEach(r => {
     if (!r.item_code || r.item_code.trim() === '') return;
-
     const code = r.item_code.trim();
-
-    // Parse tanggal row ini — skip kalau tidak valid
+    if (!histMap[code]) histMap[code] = { total_out: 0, last_out: '', _lastDate: null };
+    histMap[code].total_out += (parseInt(r.qty) || 0);
     const d = parseDate(r.date);
-
-    if (!itemMap[code]) {
-      itemMap[code] = {
-        item_code:  code,
-        item_name:  r.item_name || code,
-        stock:      parseInt(r.stock) || 0,
-        total_out:  0,
-        last_out:   d ? r.date : '',  // hanya isi kalau tanggalnya valid
-        _lastDate:  d || null,
-      };
+    if (d && (!histMap[code]._lastDate || d >= histMap[code]._lastDate)) {
+      histMap[code]._lastDate = d;
+      histMap[code].last_out  = r.date;
     }
+  });
 
-    // Akumulasi total keluar
-    itemMap[code].total_out += (parseInt(r.qty) || 0);
-
-    // Update kalau tanggal row ini lebih baru atau sama
-    if (d) {
-      if (!itemMap[code]._lastDate || d >= itemMap[code]._lastDate) {
+  if (masterSource) {
+    // ── Sumber utama: DATA MASTER CSV ──
+    return masterSource.map(item => {
+      const code = item.item_code.trim();
+      const hist = histMap[code] || { total_out: 0, last_out: '-' };
+      return {
+        item_code:  code,
+        item_name:  item.item_name || code,
+        lokasi:     item.lokasi    || '-',
+        uom:        item.uom       || '',
+        stock:      item.stock,          // sudah 0 kalau kosong dari VBA
+        total_out:  hist.total_out,
+        last_out:   hist.last_out && parseDate(hist.last_out)
+                      ? hist.last_out : '-',
+      };
+    });
+  } else {
+    // ── Fallback: derive dari outgoing kalau datamaster.csv belum ada ──
+    const itemMap = {};
+    outgoing.forEach(r => {
+      if (!r.item_code || r.item_code.trim() === '') return;
+      const code = r.item_code.trim();
+      const d    = parseDate(r.date);
+      if (!itemMap[code]) {
+        itemMap[code] = {
+          item_code: code,
+          item_name: r.item_name || code,
+          lokasi:    '-',
+          uom:       '',
+          stock:     parseInt(r.stock) || 0,
+          total_out: 0,
+          last_out:  d ? r.date : '-',
+          _lastDate: d || null,
+        };
+      }
+      itemMap[code].total_out += (parseInt(r.qty) || 0);
+      if (d && (!itemMap[code]._lastDate || d >= itemMap[code]._lastDate)) {
         itemMap[code]._lastDate = d;
         itemMap[code].last_out  = r.date;
-        // Update stock hanya dari baris yang punya nilai stock valid
-        if (r.stock !== '' && r.stock !== undefined && r.stock !== null) {
+        if (r.stock !== '' && r.stock !== undefined) {
           const s = parseInt(r.stock);
           if (!isNaN(s)) itemMap[code].stock = s;
         }
       }
-    }
-  });
-
-  return Object.values(itemMap).map(item => {
-    // Hapus field internal _lastDate dari output
-    const { _lastDate, ...rest } = item;
-    return {
+    });
+    return Object.values(itemMap).map(({ _lastDate, ...rest }) => ({
       ...rest,
       stock:    parseInt(rest.stock) || 0,
-      // Pastikan last_out adalah string dd/mm/yyyy yang valid, bukan string kosong aneh
       last_out: rest.last_out && parseDate(rest.last_out) ? rest.last_out : '-',
-    };
-  });
+    }));
+  }
 }
 
 /** Tentukan status item berdasarkan threshold */
@@ -1597,7 +1666,7 @@ function renderStockMasterPage() {
   if (!tbody) return;
 
   if (pageRows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--clr-text3);padding:30px">
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--clr-text3);padding:30px">
       <i class="bi bi-inbox" style="font-size:28px;display:block;margin-bottom:8px"></i>Tidak ada data
     </td></tr>`;
   } else {
@@ -1611,25 +1680,25 @@ function renderStockMasterPage() {
         <tr class="${st.level === 'critical' || st.level === 'empty' ? 'row-alert' : ''}">
           <td style="color:var(--clr-text3);font-size:11px">${rowNum}</td>
           <td><span class="item-code-badge">${item.item_code}</span></td>
-          <td style="font-weight:500;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          <td style="font-weight:500;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
             ${item.item_name}
           </td>
+          <td style="font-size:12px;color:var(--clr-text3)">${item.lokasi || '-'}</td>
           <td>
             <div class="stock-cell">
               <div class="stock-bar-wrap">
                 <div class="stock-bar-fill ${st.level}" style="width:${pct}%"></div>
               </div>
               <span class="stock-val" style="color:${st.color}">
-                <strong>${fmtNum(item.stock)}</strong> unit
+                <strong>${fmtNum(item.stock)}</strong>
               </span>
             </div>
           </td>
+          <td style="font-size:12px;color:var(--clr-text3)">${item.uom || '-'}</td>
           <td style="font-family:'JetBrains Mono',monospace;color:var(--clr-text2)">
             ${fmtNum(item.total_out)}
           </td>
-          <td style="font-size:12px;color:var(--clr-text3)">
-            ${item.last_out || '-'}
-          </td>
+          <td style="font-size:12px;color:var(--clr-text3)">${item.last_out || '-'}</td>
           <td>
             <span class="stock-status-badge ${st.level}">
               ${st.level === 'empty'    ? '<i class="bi bi-slash-circle-fill"></i>' :
