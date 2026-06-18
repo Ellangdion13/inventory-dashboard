@@ -21,6 +21,18 @@ const App = {
     autoRefresh: true,
     refreshInterval: 60000,
     darkMode: false,
+    // ── Stockout forecast ──
+    // Ambang batas konservatif untuk SEMUA item (lokal & impor belum bisa dibedakan
+    // karena datamaster.csv belum punya kolom kategori sumber barang). Nilai ini
+    // sengaja dipakai sebagai pendekatan aman: dihitung dari estimasi lead time
+    // pengadaan sparepart LOKAL (approval 3-5 hari + pengiriman 14 hari + penerimaan
+    // 1-2 hari ≈ 18-21 hari), dibulatkan ke 21 hari. Item impor (biasanya lebih lama)
+    // akan tetap tertangkap di kategori Perhatian sebelum kritis karena ambang
+    // Perhatian diset cukup tinggi (30 hari). Sesuaikan di halaman Setting begitu
+    // proses procurement berubah atau kategori lokal/impor sudah bisa dibedakan.
+    forecastWindowDays: 30,      // berapa hari histori dipakai sbg basis rata-rata konsumsi
+    forecastCriticalDays: 21,    // di bawah ini = Kritis (≈ lead time lokal maksimum)
+    forecastWarningDays: 30,     // di bawah ini (dan >= kritis) = Perhatian
   },
   stock: {
     sortCol: 'stock',
@@ -1744,6 +1756,95 @@ function getStockStatus(stock, threshold) {
   return                                   { level: 'ok',       label: 'Aman',       color: '#00e5a0' };
 }
 
+/**
+ * Hitung prediksi stockout (perkiraan habis stok) untuk setiap item di stock master.
+ *
+ * Logika inti: rata-rata konsumsi harian dihitung dari TOTAL qty keluar dibagi
+ * JUMLAH HARI AKTIF (hari yang benar-benar ada transaksi) dalam window N hari
+ * terakhir — bukan dibagi N hari kalender mentah. Ini penting supaya item yang
+ * jarang keluar (misal cuma 2-3 kali sebulan) tidak under-estimate rata-rata
+ * konsumsinya hanya karena banyak hari kosong di antaranya.
+ *
+ * Ambang batas Kritis/Perhatian SENGAJA dibuat satu angka konservatif untuk
+ * semua item (lihat catatan di App.settings.forecastCriticalDays), karena
+ * datamaster.csv saat ini belum membedakan item lokal vs impor yang punya
+ * lead time pengadaan jauh berbeda. Begitu kolom kategori tersedia, fungsi
+ * ini bisa dikembangkan untuk memilih ambang berbeda per kategori.
+ *
+ * @param {Array} outgoing - App.data.outgoing, SEMUA transaksi (belum difilter tanggal UI)
+ * @param {Array} stockMaster - hasil buildStockMaster(), sumber stok terkini
+ * @returns {Array} stockMaster dengan field tambahan: dailyAvg, daysLeft, forecastLevel
+ */
+function calculateStockoutForecast(outgoing, stockMaster) {
+  const windowDays    = App.settings.forecastWindowDays;
+  const criticalDays  = App.settings.forecastCriticalDays;
+  const warningDays   = App.settings.forecastWarningDays;
+
+  const today = new Date();
+  const windowStart = new Date(today);
+  windowStart.setDate(windowStart.getDate() - windowDays);
+
+  // 1) Kelompokkan qty keluar per item HANYA dalam window N hari terakhir,
+  //    sekaligus catat tanggal-tanggal unik yang punya transaksi (hari aktif).
+  const windowMap = {}; // { item_code: { totalQty, activeDates: Set<string> } }
+
+  outgoing.forEach(r => {
+    if (!r.item_code) return;
+    const d = parseDate(r.date);
+    if (!d || d < windowStart || d > today) return; // di luar window, skip
+
+    const code = r.item_code.trim();
+    if (!windowMap[code]) windowMap[code] = { totalQty: 0, activeDates: new Set() };
+    windowMap[code].totalQty += (parseInt(r.qty) || 0);
+    windowMap[code].activeDates.add(r.date);
+  });
+
+  // 2) Untuk setiap item, hitung rata-rata harian, hari tersisa, dan level risiko
+  return stockMaster.map(item => {
+    const w = windowMap[item.item_code];
+
+    // Tidak ada transaksi sama sekali dalam window → tidak bisa diprediksi, anggap stabil
+    if (!w || w.activeDates.size === 0) {
+      return { ...item, dailyAvg: 0, daysLeft: null, forecastLevel: 'stable' };
+    }
+
+    const activeDayCount = w.activeDates.size;
+    const dailyAvg = w.totalQty / activeDayCount;
+
+    if (dailyAvg <= 0) {
+      return { ...item, dailyAvg: 0, daysLeft: null, forecastLevel: 'stable' };
+    }
+
+    const daysLeft = item.stock / dailyAvg;
+
+    let forecastLevel;
+    if (daysLeft < criticalDays)      forecastLevel = 'critical';
+    else if (daysLeft <= warningDays) forecastLevel = 'warning';
+    else                              forecastLevel = 'safe';
+
+    return {
+      ...item,
+      dailyAvg:  Math.round(dailyAvg * 100) / 100,
+      daysLeft:  Math.round(daysLeft * 10) / 10,
+      forecastLevel,
+    };
+  });
+}
+
+/** Label & warna untuk tiap level forecast — dipakai di tabel Stock Master */
+function getForecastBadge(level, daysLeft) {
+  switch (level) {
+    case 'critical':
+      return { label: `Kritis · ${daysLeft} hari`, className: 'forecast-critical' };
+    case 'warning':
+      return { label: `Perhatian · ${daysLeft} hari`, className: 'forecast-warning' };
+    case 'safe':
+      return { label: `Aman · ${daysLeft} hari`, className: 'forecast-safe' };
+    default:
+      return { label: 'Tidak ada pergerakan', className: 'forecast-stable' };
+  }
+}
+
 /** Update badge "data per tanggal berapa" di halaman Stock Master.
  *  Sebelumnya menampilkan jam render browser — sekarang menampilkan tanggal
  *  transaksi terbaru yang benar-benar ada di CSV, agar tidak menyesatkan
@@ -1768,7 +1869,11 @@ function updateStockSyncBadge() {
 /** Render halaman Stock Master */
 function renderStockMasterPage() {
   const threshold = App.settings.lowStockThreshold;
-  const master    = buildStockMaster(App.data.outgoing);
+  let master      = buildStockMaster(App.data.outgoing);
+  // Tambahkan prediksi stockout (dailyAvg, daysLeft, forecastLevel) ke setiap item.
+  // Dihitung dari App.data.outgoing (semua histori, TIDAK terbatas filter tanggal UI)
+  // supaya window 30 hari forecast tidak ikut terpotong oleh filter dashboard.
+  master = calculateStockoutForecast(App.data.outgoing, master);
   App.data.stockMaster = master;
   updateStockSyncBadge();
 
@@ -1806,6 +1911,16 @@ function renderStockMasterPage() {
     let va = a[col], vb = b[col];
     if (col === 'stock' || col === 'total_out') {
       va = Number(va) || 0; vb = Number(vb) || 0;
+    } else if (col === 'daysLeft') {
+      // Item "stable" (tidak ada pergerakan, daysLeft = null) selalu ditaruh di
+      // akhir urutan saat sort ascending — karena tidak ada urgensi sama sekali,
+      // bukan diperlakukan seolah daysLeft = 0 (yang akan keliru dianggap kritis).
+      const aNull = va === null || va === undefined;
+      const bNull = vb === null || vb === undefined;
+      if (aNull && bNull) return 0;
+      if (aNull) return 1;
+      if (bNull) return -1;
+      va = Number(va); vb = Number(vb);
     } else if (col === 'last_out') {
       va = parseDate(va) || new Date(0);
       vb = parseDate(vb) || new Date(0);
@@ -1836,12 +1951,13 @@ function renderStockMasterPage() {
   if (!tbody) return;
 
   if (pageRows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--clr-text3);padding:30px">
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--clr-text3);padding:30px">
       <i class="bi bi-inbox" style="font-size:28px;display:block;margin-bottom:8px"></i>Tidak ada data
     </td></tr>`;
   } else {
     tbody.innerHTML = pageRows.map((item, i) => {
       const st       = getStockStatus(item.stock, threshold);
+      const fc        = getForecastBadge(item.forecastLevel, item.daysLeft);
       const rowNum   = startIdx + i + 1;
       const pct      = threshold > 0
         ? Math.min((item.stock / (threshold * 3)) * 100, 100) : 0;
@@ -1869,6 +1985,7 @@ function renderStockMasterPage() {
             ${fmtNum(item.total_out)}
           </td>
           <td style="font-size:12px;color:var(--clr-text3)">${item.last_out || '-'}</td>
+          <td><span class="forecast-badge ${fc.className}">${fc.label}</span></td>
           <td>
             <span class="stock-status-badge ${st.level}">
               ${st.level === 'empty'    ? '<i class="bi bi-slash-circle-fill"></i>' :
@@ -2537,10 +2654,13 @@ const SETTINGS_KEY = 'btkch_dashboard_settings';
 function saveSettings() {
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-      lowStockThreshold: App.settings.lowStockThreshold,
-      autoRefresh:       App.settings.autoRefresh,
-      refreshInterval:   App.settings.refreshInterval,
-      darkMode:          App.settings.darkMode,
+      lowStockThreshold:    App.settings.lowStockThreshold,
+      autoRefresh:          App.settings.autoRefresh,
+      refreshInterval:      App.settings.refreshInterval,
+      darkMode:             App.settings.darkMode,
+      forecastWindowDays:   App.settings.forecastWindowDays,
+      forecastCriticalDays: App.settings.forecastCriticalDays,
+      forecastWarningDays:  App.settings.forecastWarningDays,
     }));
   } catch(e) { console.warn('saveSettings failed:', e); }
 }
@@ -2552,10 +2672,13 @@ function loadSettings() {
     if (!saved) return;
     const s = JSON.parse(saved);
 
-    if (s.lowStockThreshold != null) App.settings.lowStockThreshold = s.lowStockThreshold;
-    if (s.autoRefresh       != null) App.settings.autoRefresh       = s.autoRefresh;
-    if (s.refreshInterval   != null) App.settings.refreshInterval   = s.refreshInterval;
-    if (s.darkMode          != null) App.settings.darkMode          = s.darkMode;
+    if (s.lowStockThreshold    != null) App.settings.lowStockThreshold    = s.lowStockThreshold;
+    if (s.autoRefresh          != null) App.settings.autoRefresh          = s.autoRefresh;
+    if (s.refreshInterval      != null) App.settings.refreshInterval      = s.refreshInterval;
+    if (s.darkMode             != null) App.settings.darkMode             = s.darkMode;
+    if (s.forecastWindowDays   != null) App.settings.forecastWindowDays   = s.forecastWindowDays;
+    if (s.forecastCriticalDays != null) App.settings.forecastCriticalDays = s.forecastCriticalDays;
+    if (s.forecastWarningDays  != null) App.settings.forecastWarningDays  = s.forecastWarningDays;
   } catch(e) { console.warn('loadSettings failed:', e); }
 }
 
@@ -2565,11 +2688,17 @@ function syncSettingsUI() {
   const refreshIntervalEl = document.getElementById('refreshInterval');
   const lowStockInput     = document.getElementById('lowStockThreshold');
   const darkModeToggle    = document.getElementById('darkModeToggleSetting');
+  const forecastWindowEl    = document.getElementById('forecastWindowDays');
+  const forecastCriticalEl  = document.getElementById('forecastCriticalDays');
+  const forecastWarningEl   = document.getElementById('forecastWarningDays');
 
   if (autoRefreshToggle) autoRefreshToggle.checked = App.settings.autoRefresh;
   if (refreshIntervalEl) refreshIntervalEl.value   = String(App.settings.refreshInterval);
   if (lowStockInput)     lowStockInput.value        = String(App.settings.lowStockThreshold);
   if (darkModeToggle)    darkModeToggle.checked     = App.settings.darkMode;
+  if (forecastWindowEl)   forecastWindowEl.value   = String(App.settings.forecastWindowDays);
+  if (forecastCriticalEl) forecastCriticalEl.value = String(App.settings.forecastCriticalDays);
+  if (forecastWarningEl)  forecastWarningEl.value  = String(App.settings.forecastWarningDays);
 }
 
 // ===================== SETTINGS PAGE =====================
@@ -2617,6 +2746,47 @@ function initSettings() {
       btn.innerHTML = orig;
       btn.style.background = '';
     }, 2000);
+  });
+
+  // Stockout forecast settings
+  document.getElementById('saveForecastSettings')?.addEventListener('click', () => {
+    const windowVal   = Math.max(7, parseInt(document.getElementById('forecastWindowDays')?.value || '30'));
+    let   criticalVal = Math.max(1, parseInt(document.getElementById('forecastCriticalDays')?.value || '21'));
+    let   warningVal  = Math.max(1, parseInt(document.getElementById('forecastWarningDays')?.value || '30'));
+
+    // Validasi: ambang Perhatian harus >= ambang Kritis, kalau tidak logikanya
+    // terbalik (item yang seharusnya "lebih aman" malah dianggap kritis).
+    // Daripada menolak diam-diam, kita perbaiki otomatis & beri tahu pengguna.
+    let adjusted = false;
+    if (warningVal < criticalVal) {
+      warningVal = criticalVal;
+      adjusted = true;
+    }
+
+    App.settings.forecastWindowDays   = windowVal;
+    App.settings.forecastCriticalDays = criticalVal;
+    App.settings.forecastWarningDays  = warningVal;
+    saveSettings();
+
+    // Sinkronkan kembali ke input (terutama kalau warningVal sempat dikoreksi)
+    syncSettingsUI();
+
+    // Re-render Stock Master kalau halaman itu sedang aktif, supaya forecast
+    // langsung kelihatan pakai ambang batas yang baru tanpa perlu reload.
+    if (App.ui.currentPage === 'stock') renderStockMasterPage();
+
+    const btn = document.getElementById('saveForecastSettings');
+    const orig = btn.innerHTML;
+    btn.innerHTML = adjusted
+      ? '<i class="bi bi-info-circle-fill"></i> Disesuaikan & disimpan'
+      : '<i class="bi bi-check-circle-fill"></i> Tersimpan!';
+    btn.style.background = adjusted
+      ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+      : 'linear-gradient(135deg, #10b981, #059669)';
+    setTimeout(() => {
+      btn.innerHTML = orig;
+      btn.style.background = '';
+    }, 2500);
   });
 
   // Sync dark mode toggle in settings

@@ -2468,6 +2468,18 @@ body.light-mode .kpi-label { color: #475569; }
 .stock-status-badge.critical { background: rgba(239,68,68,0.12);  color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
 .stock-status-badge.empty    { background: rgba(100,116,139,0.12);color: #94a3b8; border: 1px solid rgba(100,116,139,0.25); }
 
+/* Forecast badge — kolom "Perkiraan Habis" di Stock Master */
+.forecast-badge {
+  display: inline-flex; align-items: center;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+  font-family: 'JetBrains Mono', monospace;
+}
+.forecast-badge.forecast-critical { background: rgba(239,68,68,0.12);  color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+.forecast-badge.forecast-warning  { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+.forecast-badge.forecast-safe     { background: rgba(0,229,160,0.12);  color: #00e5a0; border: 1px solid rgba(0,229,160,0.25); }
+.forecast-badge.forecast-stable   { background: rgba(100,116,139,0.12);color: #94a3b8; border: 1px solid rgba(100,116,139,0.25); }
+
 /* Alert row highlight */
 .data-table tbody tr.row-alert {
   background: rgba(239,68,68,0.04);
