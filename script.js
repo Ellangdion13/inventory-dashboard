@@ -51,6 +51,17 @@ const App = {
     filterFrom: null,
     filterTo: null,
     currentTrxTab: 'outgoing', // 'outgoing' | 'expense'
+    // Badge "Stock Master" di sidebar: sengaja TIDAK disimpan ke localStorage,
+    // supaya reload/refresh browser otomatis mengembalikan badge (sesuai keputusan:
+    // hilang permanen setelah dibuka dalam sesi ini, tapi muncul lagi setelah reload).
+    stockBadgeDismissed: false,
+    // Sama seperti stockBadgeDismissed: badge "NEW" di menu Analytic hilang
+    // permanen untuk sesi ini setelah dibuka, dan kembali muncul setelah reload.
+    analyticBadgeDismissed: false,
+    // Daftar item_code yang kritis terakhir kali badge dihitung — dipakai untuk
+    // mendeteksi item BARU yang baru saja jadi kritis, agar badge tetap muncul lagi
+    // walau sebelumnya sudah di-dismiss (peringatan baru tidak boleh ter-mute selamanya).
+    lastSeenCriticalCodes: new Set(),
   },
   charts: {},           // Chart.js instances
   intervals: {},        // setInterval references
@@ -2096,15 +2107,37 @@ function computeAlerts() {
     .sort((a, b) => a.stock - b.stock);
 }
 
-/** Update badge alert di sidebar */
+/** Update badge alert di sidebar.
+ *
+ * Perilaku yang diinginkan: badge hilang permanen (untuk sesi ini) setelah
+ * halaman Stock Master dibuka, TAPI kalau ada item kritis BARU yang sebelumnya
+ * belum pernah kritis (dibanding terakhir kali badge dihitung), badge muncul
+ * lagi otomatis — supaya peringatan baru tidak ter-mute selamanya hanya karena
+ * pernah dibuka sebelumnya. Setelah reload/refresh browser, App.ui dibuat ulang
+ * dari awal sehingga stockBadgeDismissed otomatis kembali false. */
 function updateAlertBadge() {
-  const alerts = computeAlerts();
-  const critical = alerts.filter(a => a.status.level === 'critical' || a.status.level === 'empty').length;
+  const alerts   = computeAlerts();
+  const critical = alerts.filter(a => a.status.level === 'critical' || a.status.level === 'empty');
   const badge    = document.getElementById('stockAlertBadge');
 
+  const currentCriticalCodes = new Set(critical.map(a => a.item_code));
+
+  // Cek apakah ada item kritis baru yang TIDAK ada di set terakhir yang sudah "dilihat"
+  let hasNewCritical = false;
+  currentCriticalCodes.forEach(code => {
+    if (!App.ui.lastSeenCriticalCodes.has(code)) hasNewCritical = true;
+  });
+
+  // Item kritis baru → batalkan status "sudah dilihat", badge wajib muncul lagi
+  if (hasNewCritical) {
+    App.ui.stockBadgeDismissed = false;
+  }
+
   if (badge) {
-    if (critical > 0) {
-      badge.textContent = critical;
+    if (App.ui.stockBadgeDismissed) {
+      badge.style.display = 'none';
+    } else if (critical.length > 0) {
+      badge.textContent = critical.length;
       badge.style.display = '';
       badge.className = 'nav-alert-badge critical';
     } else if (alerts.length > 0) {
@@ -2115,6 +2148,10 @@ function updateAlertBadge() {
       badge.style.display = 'none';
     }
   }
+
+  // Simpan snapshot kode item kritis SAAT INI, agar pemanggilan berikutnya bisa
+  // membandingkan dan mendeteksi item baru yang baru saja menjadi kritis.
+  App.ui.lastSeenCriticalCodes = currentCriticalCodes;
 
   return alerts;
 }
@@ -2461,6 +2498,21 @@ function navigateTo(page) {
 
   App.ui.currentPage = page;
 
+  // Badge "Stock Master" di sidebar: tandai sudah dilihat begitu halaman ini
+  // dibuka, lalu langsung sembunyikan tanpa menunggu siklus refresh berikutnya.
+  if (page === 'stock' && !App.ui.stockBadgeDismissed) {
+    App.ui.stockBadgeDismissed = true;
+    const badge = document.getElementById('stockAlertBadge');
+    if (badge) badge.style.display = 'none';
+  }
+
+  // Badge "NEW" di menu Analytic: sama, hilang permanen untuk sesi ini setelah dibuka.
+  if (page === 'analytic' && !App.ui.analyticBadgeDismissed) {
+    App.ui.analyticBadgeDismissed = true;
+    const analyticBadge = document.getElementById('analyticBadge');
+    if (analyticBadge) analyticBadge.style.display = 'none';
+  }
+
   // Render page-specific content
   renderCurrentPage();
 
@@ -2789,12 +2841,10 @@ function initSettings() {
     }, 2500);
   });
 
-  // Sync dark mode toggle in settings
-  const darkSettingToggle = document.getElementById('darkModeToggleSetting');
-  darkSettingToggle?.addEventListener('change', () => {
-    document.getElementById('darkmodeBtn')?.click();
-    saveSettings();
-  });
+  // Catatan: listener untuk darkModeToggleSetting SUDAH dipasang di initDarkMode().
+  // Sebelumnya ada listener kedua di sini yang mensimulasikan klik ke darkmodeBtn,
+  // dan itu menyebabkan toggle langsung berbalik lagi setelah diklik (dua listener
+  // saling timpa dalam satu siklus event). Sengaja tidak dipasang ulang di sini.
 }
 
 // ===================== AUTO REFRESH =====================
