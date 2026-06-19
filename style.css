@@ -1935,6 +1935,38 @@ body.light-mode .sidebar {
   background: linear-gradient(180deg, #1e2a3a 0%, #161f2e 100%);
 }
 
+/* Sidebar SENGAJA tetap gelap di light mode (untuk kontras visual dengan
+   konten utama yang terang), tapi --clr-text2/--clr-text3 global ikut berubah
+   jadi warna gelap (didesain untuk background terang) saat light-mode aktif.
+   Tanpa override ini, label menu yang tidak aktif jadi nyaris tidak terbaca
+   karena teks gelap di atas sidebar yang juga gelap. Override warna teks di
+   dalam sidebar supaya tetap terang, independen dari variabel global. */
+body.light-mode .sidebar .nav-item {
+  color: rgba(226,232,240,0.65);
+}
+body.light-mode .sidebar .nav-item:hover {
+  color: #ffffff;
+}
+body.light-mode .sidebar .nav-item.active {
+  color: var(--clr-blue);
+}
+body.light-mode .sidebar .nav-section-label {
+  color: rgba(226,232,240,0.4);
+}
+body.light-mode .sidebar .sidebar-logo-text .logo-sub,
+body.light-mode .sidebar .sidebar-credit,
+body.light-mode .sidebar .system-status,
+body.light-mode .sidebar .sidebar-version {
+  color: rgba(226,232,240,0.55);
+}
+body.light-mode .sidebar .nav-sub-item {
+  color: rgba(226,232,240,0.55);
+}
+body.light-mode .sidebar .nav-sub-item:hover,
+body.light-mode .sidebar .nav-sub-item.active {
+  color: #ffffff;
+}
+
 body.light-mode .filter-input,
 body.light-mode .filter-select,
 body.light-mode .search-input {
