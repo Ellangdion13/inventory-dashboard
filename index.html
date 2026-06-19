@@ -1,28 +1,34 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+  <!-- Enkoding karakter UTF-8 agar mendukung karakter Indonesia -->
   <meta charset="UTF-8" />
+  <!-- Viewport responsif: lebar mengikuti layar device, skala awal 1x -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Judul tab browser -->
   <title>BT-KCH Inventory Monitoring Dashboard</title>
 
   <!-- ===================== EXTERNAL LIBRARIES ===================== -->
-  <!-- Bootstrap -->
+  <!-- Bootstrap: framework CSS untuk grid, komponen, dan utilitas -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- Bootstrap Icons -->
+  <!-- Bootstrap Icons: library ikon SVG yang digunakan di seluruh aplikasi -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Inter untuk teks utama, JetBrains Mono untuk angka/kode -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<!-- Custom CSS -->
+<!-- Custom CSS: stylesheet utama aplikasi (tema dark, komponen, animasi) -->
 <link rel="stylesheet" href="style.css">
 
   <!-- ===================== PWA ===================== -->
+  <!-- Manifest PWA: metadata agar aplikasi bisa di-install sebagai Progressive Web App -->
   <link rel="manifest" href="manifest.json">
+  <!-- Warna tema browser (address bar) saat aplikasi dibuka di mobile -->
   <meta name="theme-color" content="#1e90ff">
+  <!-- Ikon yang muncul saat aplikasi di-shortcut ke home screen iOS -->
   <link rel="apple-touch-icon" href="assets/icon-192.png">
 </head>
 <body>
@@ -32,9 +38,9 @@
 
   <!-- Background decoration -->
   <div class="login-bg-decor">
-    <div class="login-bg-ring r1"></div>
-    <div class="login-bg-ring r2"></div>
-    <div class="login-bg-ring r3"></div>
+    <div class="login-bg-ring r1"></div><!-- Cincin dekorasi background layer 1 -->
+    <div class="login-bg-ring r2"></div><!-- Cincin dekorasi background layer 2 -->
+    <div class="login-bg-ring r3"></div><!-- Cincin dekorasi background layer 3 -->
   </div>
 
   <!-- Single centered card -->
@@ -104,9 +110,9 @@
     <div class="loading-text">Bintang Toedjoe</div>
     <div class="loading-sub">Kalbe Consumer Health</div>
     <div class="loading-bar-wrap">
-      <div class="loading-bar" id="loadingBar"></div>
+      <div class="loading-bar" id="loadingBar"></div><!-- Bar progress loading; lebar diupdate dinamis via JS -->
     </div>
-    <div class="loading-status" id="loadingStatus">Initializing system...</div>
+    <div class="loading-status" id="loadingStatus">Initializing system...</div><!-- Teks status loading saat ini; diubah JS per tahap -->
   </div>
 </div>
 
@@ -154,7 +160,7 @@
         <a href="#" class="nav-sub-item" data-machine-group="SIG"><i class="bi bi-cpu"></i> SIG</a>
         <a href="#" class="nav-sub-item" data-machine-group="UNIFIL"><i class="bi bi-cpu"></i> UNIFIL</a>
         <a href="#" class="nav-sub-item" data-machine-group="CHIMEI"><i class="bi bi-cpu"></i> CHIMEI</a>
-        <a href="#" class="nav-sub-item" data-machine-group="JINSUG"><i class="bi bi-cpu"></i> JINSUG</a>
+        <a href="#" class="nav-sub-item" data-machine-group="JINSUNG"><i class="bi bi-cpu"></i> JINSUNG</a>
         <a href="#" class="nav-sub-item" data-machine-group="FBD"><i class="bi bi-cpu"></i> FBD</a>
         <a href="#" class="nav-sub-item" data-machine-group="STORAGE TANK"><i class="bi bi-cpu"></i> Storage Tank</a>
         <a href="#" class="nav-sub-item" data-machine-group="BOILER"><i class="bi bi-cpu"></i> Boiler</a>
@@ -485,7 +491,7 @@
             <button class="mgf-btn" data-group="SIG">SIG</button>
             <button class="mgf-btn" data-group="UNIFIL">UNIFIL</button>
             <button class="mgf-btn" data-group="CHIMEI">CHIMEI</button>
-            <button class="mgf-btn" data-group="JINSUG">JINSUG</button>
+            <button class="mgf-btn" data-group="JINSUNG">JINSUNG</button><!-- Filter tombol grup mesin JINSUNG -->
             <button class="mgf-btn" data-group="FBD">FBD</button>
             <button class="mgf-btn" data-group="STORAGE TANK">Storage Tank</button>
             <button class="mgf-btn" data-group="BOILER">Boiler</button>
@@ -962,13 +968,16 @@
 <div id="alertToastContainer" class="alert-toast-container"></div>
 
 <!-- ===================== EXTERNAL SCRIPTS ===================== -->
+<!-- Bootstrap JS Bundle: termasuk Popper.js untuk dropdown & modal -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- Chart.js: library visualisasi data untuk semua grafik di dashboard -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
+<!-- PapaParse: library parsing CSV di browser (tanpa server) -->
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
-<!-- Custom Script -->
+<!-- Custom Script: logika utama aplikasi (app.js) -->
 <script src="script.js"></script>
 
 <!-- ===================== PWA SERVICE WORKER ===================== -->

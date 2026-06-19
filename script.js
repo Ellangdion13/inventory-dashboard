@@ -3,18 +3,18 @@
    Main JavaScript — Vanilla JS + Chart.js + PapaParse
    ============================================================ */
 
-'use strict';
+'use strict'; // Aktifkan strict mode: mencegah penggunaan variabel yang tidak dideklarasi
 
 // ===================== GLOBAL STATE =====================
-const App = {
+const App = { // Objek utama penyimpan seluruh state aplikasi
   data: {
-    outgoing: [],         // Raw parsed CSV data
-    expense: [],          // Raw expense CSV data
-    master: [],           // DATA MASTER langsung dari datamaster.csv
-    filtered: [],         // Gabungan outgoing+expense, after date filter
-    filteredOutgoing: [], // Hanya outgoing, after date filter (untuk dashboard)
-    filteredExpense: [],  // Hanya expense, after date filter (untuk trx tab expense)
-    stockMaster: [],      // Stock master final (dari master CSV)
+    outgoing: [],         // Data CSV outgoing mentah hasil parse PapaParse
+    expense: [],          // Data CSV expense mentah hasil parse PapaParse
+    master: [],           // Data stok master dari datamaster.csv (kode, nama, lokasi, stok, UOM)
+    filtered: [],         // Gabungan outgoing+expense setelah difilter tanggal (untuk machine & analytic)
+    filteredOutgoing: [], // Hanya outgoing setelah filter (untuk dashboard & transaction tab outgoing)
+    filteredExpense: [],  // Hanya expense setelah filter (untuk transaction tab expense)
+    stockMaster: [],      // Data stock master final yang sudah di-enrich dengan histori outgoing
   },
   settings: {
     lowStockThreshold: 10,
@@ -76,7 +76,7 @@ const App = {
 
 // ===================== AUTH SYSTEM =====================
 
-const AUTH_KEY = 'btkch_auth_session';
+const AUTH_KEY = 'btkch_auth_session'; // Key localStorage untuk menyimpan sesi login
 
 const USERS = [
   { username: 'admin',    password: 'admin123',  role: 'admin', name: 'Admin Sparepart', dept: 'Sparepart' },
@@ -88,32 +88,38 @@ const PERMISSIONS = {
   user:  { pages: ['dashboard','machine'],                                            canExport: false, canSetting: false, label: 'User' },
 };
 
-let currentUser = null;
+let currentUser = null; // Menyimpan data user yang sedang login (null = belum login)
 
+// Simpan data sesi user ke localStorage agar bisa direstorasi saat reload
 function saveSession(user) {
   try { localStorage.setItem(AUTH_KEY, JSON.stringify({ username: user.username, role: user.role, name: user.name, dept: user.dept })); } catch(e) {}
 }
+// Baca data sesi user dari localStorage; kembalikan null jika tidak ada
 function loadSession() {
   try { const s = localStorage.getItem(AUTH_KEY); return s ? JSON.parse(s) : null; } catch(e) { return null; }
 }
+// Hapus sesi user dari localStorage (dipanggil saat logout)
 function clearSession() {
   try { localStorage.removeItem(AUTH_KEY); } catch(e) {}
 }
 
+// Validasi kredensial; jika cocok simpan sesi dan kembalikan true
 function login(username, password) {
   const user = USERS.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
   if (!user) return false;
-  currentUser = user;
-  saveSession(user);
-  return true;
+  currentUser = user; // Simpan user yang login ke variabel global
+  saveSession(user); // Persisten sesi ke localStorage
+  return true; // Kembalikan true sebagai tanda login berhasil
 }
 
+// Hapus sesi, reset currentUser, dan tampilkan layar login kembali
 function logout() {
-  currentUser = null;
-  clearSession();
-  showLoginScreen();
+  currentUser = null; // Hapus referensi user yang login
+  clearSession(); // Hapus sesi dari localStorage
+  showLoginScreen(); // Kembali ke halaman login
 }
 
+// Tampilkan/sembunyikan elemen UI sesuai role user yang sedang login
 function applyRoleUI() {
   if (!currentUser) return;
   const perm = PERMISSIONS[currentUser.role] || PERMISSIONS.user;
@@ -143,6 +149,7 @@ function applyRoleUI() {
   if (exportBtn) exportBtn.style.display = perm.canExport ? '' : 'none';
 }
 
+// Tampilkan layar login dan sembunyikan wrapper aplikasi utama
 function showLoginScreen() {
   const ls = document.getElementById('loginScreen');
   const aw = document.getElementById('appWrapper');
@@ -151,11 +158,13 @@ function showLoginScreen() {
   if (aw) aw.style.display = 'none';
   if (ld) ld.style.display = 'none';
 }
+// Sembunyikan layar login setelah berhasil login
 function hideLoginScreen() {
   const ls = document.getElementById('loginScreen');
   if (ls) ls.style.display = 'none';
 }
 
+// Pasang semua event listener pada form login (tombol, keyboard, toggle password)
 function initLogin() {
   const loginBtn    = document.getElementById('loginBtn');
   const usernameEl  = document.getElementById('loginUsername');
@@ -233,7 +242,7 @@ function initLogin() {
       if (errorEl) errorEl.textContent = 'Username atau password salah.';
       if (passwordEl) { passwordEl.value = ''; passwordEl.focus(); }
       // Shake animation
-      const card = document.querySelector('.login-panel-right');
+      const card = document.querySelector('.login-card'); // Kelas yang benar sesuai HTML
       card?.classList.add('shake');
       setTimeout(() => card?.classList.remove('shake'), 500);
     }
@@ -246,13 +255,13 @@ function initLogin() {
 }
 
 // ===================== CSV FILE PATHS =====================
-const CSV_OUTGOING   = './data/outgoing.csv';
-const CSV_EXPENSE    = './data/outgoingexpense.csv';
-const CSV_DATAMASTER = './data/datamaster.csv';
+const CSV_OUTGOING   = './data/outgoing.csv';    // Path file CSV data keluar sparepart
+const CSV_EXPENSE    = './data/outgoingexpense.csv'; // Path file CSV data expense keluar
+const CSV_DATAMASTER = './data/datamaster.csv'; // Path file CSV data master stok
 
 // ===================== CHART.JS GLOBAL DEFAULTS =====================
-Chart.defaults.color = '#94a3b8';
-Chart.defaults.font.family = 'Inter, sans-serif';
+Chart.defaults.color = '#94a3b8'; // Warna teks default semua chart (abu-abu terang)
+Chart.defaults.font.family = 'Inter, sans-serif'; // Font default semua label chart
 Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(10,15,30,0.92)';
 Chart.defaults.plugins.tooltip.borderColor = 'rgba(30,144,255,0.3)';
 Chart.defaults.plugins.tooltip.borderWidth = 1;
@@ -263,8 +272,8 @@ Chart.defaults.plugins.tooltip.cornerRadius = 8;
 
 /** Format date object → dd/mm/yyyy */
 function fmtDate(d) {
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0'); // Ambil tanggal, padding 0 di depan jika perlu
+  const mm = String(d.getMonth() + 1).padStart(2, '0'); // Bulan dimulai dari 0, tambah 1 agar jadi 1-12
   const yyyy = d.getFullYear();
   return `${dd}/${mm}/${yyyy}`;
 }
@@ -334,12 +343,12 @@ function parseDate(str) {
 
 /** Format number with thousand separator */
 function fmtNum(n) {
-  return Number(n).toLocaleString('id-ID');
+  return Number(n).toLocaleString('id-ID'); // Format angka dengan separator ribuan gaya Indonesia (1.000)
 }
 
 /** Format currency IDR */
 function fmtCurrency(n) {
-  return 'Rp ' + Number(n).toLocaleString('id-ID');
+  return 'Rp ' + Number(n).toLocaleString('id-ID'); // Format ke rupiah: Rp 1.000.000
 }
 
 /** Get today's date as dd/mm/yyyy */
@@ -365,14 +374,14 @@ function gradColors(n) {
     '#ef4444','#06b6d4','#10b981','#f97316','#8b5cf6',
     '#ec4899','#14b8a6','#eab308','#6366f1','#84cc16',
   ];
-  return Array.from({ length: n }, (_, i) => palette[i % palette.length]);
+  return Array.from({ length: n }, (_, i) => palette[i % palette.length]); // Pilih warna secara siklus dari palet jika n > panjang palet
 }
 
 /** Destroy chart if exists, then recreate */
 function destroyChart(key) {
-  if (App.charts[key]) {
-    App.charts[key].destroy();
-    delete App.charts[key];
+  if (App.charts[key]) { // Cek apakah chart dengan key ini sudah pernah dibuat
+    App.charts[key].destroy(); // Hancurkan instance chart lama agar tidak tumpang tindih
+    delete App.charts[key]; // Hapus referensi dari objek App.charts
   }
 }
 
@@ -386,7 +395,7 @@ function runLoadingSequence() {
   const status = document.getElementById('loadingStatus');
 
   // Animate to 95% automatically, then stop and wait
-  const steps = [
+  const steps = [ // Daftar tahap animasi loading bar beserta persentase dan pesan status
     { pct: 15,  msg: 'Initializing modules...' },
     { pct: 35,  msg: 'Loading CSV data sources...' },
     { pct: 60,  msg: 'Parsing inventory data...' },
@@ -732,6 +741,7 @@ function loadCSV(path) {
   });
 }
 
+// Update badge status sumber data di halaman Setting (Loaded / Error)
 function setDsStatus(id, ok) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -806,6 +816,7 @@ function setQuickRange(range) {
 
 // ===================== KPI CALCULATION =====================
 
+// Hitung nilai KPI (total data, qty, transaksi hari ini, dll.) dari array data
 function computeKPIs(data) {
   const today = todayStr();
   const todayRows = data.filter(r => r.date === today);
@@ -822,6 +833,7 @@ function computeKPIs(data) {
   };
 }
 
+// Render kartu KPI di dashboard dengan animasi counter
 function renderKPIs(data) {
   const kpi = computeKPIs(data);
 
@@ -989,6 +1001,7 @@ function renderMachineDonut(data) {
 
 // ===================== LOW STOCK ALERT =====================
 
+// Render daftar item mendekati batas stok minimum di widget dashboard
 function renderLowStock(data) {
   const threshold = App.settings.lowStockThreshold;
   const container = document.getElementById('lowStockList');
@@ -1049,6 +1062,7 @@ function renderLowStock(data) {
 
 // ===================== RECENT TRANSACTIONS =====================
 
+// Render daftar 8 transaksi terbaru di widget dashboard
 function renderRecentTransactions(data) {
   const container = document.getElementById('recentTrxList');
   if (!container) return;
@@ -1103,8 +1117,9 @@ const MACHINE_GROUPS = {
   'AHU':          ['AHU','AHU 101','AHU 102','AHU 103','AHU 104','AHU 105','AHU 106','AHU 107','AHU 108','AHU 109','AHU 110','AHU 111','AHU 112','AHU 113','AHU 114','AHU 115','AHU 116','AHU 201','AHU 202','AHU 203','AHU 204','AHU 205','AHU 206','AHU 207','AHU 208','AHU 209','AHU 210','AHU 211','AHU 212','AHU 213','AHU 214','AHU 215','AHU 216','AHU 217','AHU 218','AHU 219','AHU 220','AHU 221','AHU 301','AHU 302','AHU 303','AHU 304','AHU 305','AHU 306','AHU 307','AHU 308'],
 };
 
-let currentMachineGroup = 'ALL';
+let currentMachineGroup = 'ALL'; // Grup mesin yang sedang aktif di filter halaman Machine
 
+// Filter data berdasarkan grup mesin (ILAPAK, SIG, dll.) atau 'ALL' untuk semua
 function filterByMachineGroup(data, group) {
   if (!group || group === 'ALL') return data;
   const machines = MACHINE_GROUPS[group] || [];
@@ -1115,6 +1130,7 @@ function filterByMachineGroup(data, group) {
   });
 }
 
+// Pasang listener tombol filter grup mesin dan nav sub-item sidebar
 function initMachineGroupFilter() {
   document.querySelectorAll('.mgf-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1139,6 +1155,7 @@ function initMachineGroupFilter() {
   });
 }
 
+// Pasang listener toggle/expand sub-navigasi mesin di sidebar
 function initMachineSubNav() {
   const machineNavItem = document.getElementById('machineNavItem');
   const subGroup = document.getElementById('machineSubGroup');
@@ -1153,6 +1170,7 @@ function initMachineSubNav() {
 
 // ===================== CHARTS — MACHINE PAGE =====================
 
+// Render seluruh konten halaman Machine (KPI, chart, tabel ranking)
 function renderMachinePage(data) {
   // Apply group filter jika ada
   const groupData = filterByMachineGroup(data, currentMachineGroup);
@@ -1163,6 +1181,7 @@ function renderMachinePage(data) {
   renderMachineTrendChart(groupData);
 }
 
+// Render kartu mini KPI per mesin berdasarkan jumlah transaksi
 function renderMachineKPIs(data) {
   const container = document.getElementById('machineKpiRow');
   if (!container) return;
@@ -1189,6 +1208,7 @@ function renderMachineKPIs(data) {
     `).join('');
 }
 
+// Render bar chart total qty keluar per mesin
 function renderMachineBarChart(data) {
   const machineQty = {};
   data.forEach(r => {
@@ -1239,6 +1259,7 @@ function renderMachineBarChart(data) {
   });
 }
 
+// Render polar area chart frekuensi breakdown per mesin
 function renderMachineBreakdownChart(data) {
   // Frekuensi = jumlah transaksi per mesin (indikator kerusakan)
   const machineTrx = {};
@@ -1284,6 +1305,7 @@ function renderMachineBreakdownChart(data) {
   });
 }
 
+// Render tabel ranking mesin berdasarkan jumlah transaksi
 function renderMachineRankingTable(data) {
   const tbody = document.getElementById('machineRankingBody');
   if (!tbody) return;
@@ -1335,6 +1357,7 @@ function renderMachineRankingTable(data) {
   }).join('');
 }
 
+// Render line chart tren qty per mesin (top 5) selama 7 hari
 function renderMachineTrendChart(data) {
   const dates   = lastNDates(7);
   const machines = [...new Set(data.map(r => r.machine).filter(Boolean))].slice(0, 5);
@@ -1383,6 +1406,7 @@ function renderMachineTrendChart(data) {
 
 // ===================== CHARTS — ANALYTIC PAGE =====================
 
+// Render seluruh konten halaman Analytic (semua chart analitik)
 function renderAnalyticPage(data) {
   renderTop10Chart(data);
   renderRequesterChart(data);
@@ -1451,6 +1475,7 @@ function renderTop10Chart(data) {
   });
 }
 
+// Render doughnut chart distribusi transaksi per requester
 function renderRequesterChart(data) {
   const reqMap = {};
   data.forEach(r => {
@@ -1492,6 +1517,7 @@ function renderRequesterChart(data) {
   });
 }
 
+// Render pie chart distribusi transaksi per cost allocation
 function renderCostAllocChart(data) {
   const costMap = {};
   data.forEach(r => {
@@ -1860,6 +1886,7 @@ function getForecastBadge(level, daysLeft) {
  *  Sebelumnya menampilkan jam render browser — sekarang menampilkan tanggal
  *  transaksi terbaru yang benar-benar ada di CSV, agar tidak menyesatkan
  *  (jam render browser tidak mencerminkan kapan data sebenarnya terakhir diperbarui). */
+// Update badge 'data per tanggal' di header halaman Stock Master
 function updateStockSyncBadge() {
   const badge = document.getElementById('stockSyncBadge');
   const timeEl = document.getElementById('stockSyncTime');
@@ -2023,6 +2050,7 @@ function renderStockMasterPage() {
   });
 }
 
+// Render kontrol pagination untuk tabel Stock Master
 function renderStockPagination(total, page, pageSize, pages) {
   const info = document.getElementById('stockPaginationInfo');
   const ctrl = document.getElementById('stockPaginationControls');
@@ -2059,6 +2087,7 @@ window.goToStockPage = function(p) {
   renderStockMasterPage();
 };
 
+// Pasang listener search, filter status, page size, dan sortable header Stock Master
 function initStockMasterControls() {
   document.getElementById('stockSearch')?.addEventListener('input', () => {
     App.stock.currentPage = 1;
@@ -2115,6 +2144,7 @@ function computeAlerts() {
  * lagi otomatis — supaya peringatan baru tidak ter-mute selamanya hanya karena
  * pernah dibuka sebelumnya. Setelah reload/refresh browser, App.ui dibuat ulang
  * dari awal sehingga stockBadgeDismissed otomatis kembali false. */
+// Update badge angka di nav Stock Master; deteksi item kritis baru
 function updateAlertBadge() {
   const alerts   = computeAlerts();
   const critical = alerts.filter(a => a.status.level === 'critical' || a.status.level === 'empty');
@@ -2326,6 +2356,7 @@ function renderTransactionPage() {
   App.trxFilteredData = rows; // Store for export
 }
 
+// Isi dropdown filter mesin & requester dari data yang sedang ditampilkan
 function populateFilterDropdowns(data, forceReset = false) {
   const mEl = document.getElementById('trxFilterMachine');
   const rEl = document.getElementById('trxFilterRequester');
@@ -2355,6 +2386,7 @@ function populateFilterDropdowns(data, forceReset = false) {
   }
 }
 
+// Render kontrol pagination untuk tabel transaksi
 function renderPagination(total, page, pageSize, pages) {
   const info = document.getElementById('paginationInfo');
   const ctrl = document.getElementById('paginationControls');
@@ -2405,6 +2437,7 @@ window.goToPage = function(p) {
 
 // ===================== EXPORT EXCEL (CSV) =====================
 
+// Export data transaksi yang sedang terfilter ke file CSV berformat Excel
 function exportToExcel() {
   const rows = App.trxFilteredData || App.data.outgoing;
   if (!rows || rows.length === 0) return;
@@ -2416,17 +2449,19 @@ function exportToExcel() {
     csvRows.push(headers.map(h => `"${(r[h] || '').toString().replace(/"/g, '""')}"`).join(','));
   });
 
+  // Buat Blob CSV dengan BOM (\uFEFF) agar Excel bisa membaca encoding UTF-8 dengan benar
   const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
   a.download = `inventory_outgoing_${todayStr().replace(/\//g,'-')}.csv`;
   a.click();
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(url); // Bebaskan memori URL sementara setelah download dipicu
 }
 
 // ===================== SORTING =====================
 
+// Pasang listener klik header kolom sortable di tabel transaksi
 function initSortableTable() {
   document.querySelectorAll('.sortable-table th.sortable').forEach(th => {
     th.addEventListener('click', () => {
@@ -2452,6 +2487,7 @@ function initSortableTable() {
 
 // ===================== PAGE NAVIGATION =====================
 
+// Navigasi ke halaman tertentu: cek izin role, tampilkan page, update breadcrumb
 function navigateTo(page) {
   // Cek akses berdasarkan role — redirect ke dashboard kalau tidak boleh
   if (currentUser) {
@@ -2520,6 +2556,7 @@ function navigateTo(page) {
   document.getElementById('sidebar')?.classList.remove('mobile-open');
 }
 
+// Re-render konten halaman yang sedang aktif (dipanggil setelah filter/refresh)
 function renderCurrentPage() {
   const data         = App.data.filtered;          // gabungan (machine, analytic)
   const dataOutgoing = App.data.filteredOutgoing;  // outgoing only (dashboard)
@@ -2550,6 +2587,7 @@ function renderCurrentPage() {
 
 // ===================== SIDEBAR TOGGLE =====================
 
+// Pasang listener toggle sidebar (desktop collapse & mobile open/close)
 function initSidebar() {
   const sidebar     = document.getElementById('sidebar');
   const mainArea    = document.getElementById('mainArea');
@@ -2582,6 +2620,7 @@ function initSidebar() {
 
 // ===================== NAV ITEMS =====================
 
+// Pasang listener klik pada setiap item navigasi sidebar
 function initNavItems() {
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', (e) => {
@@ -2602,6 +2641,7 @@ function initNavItems() {
 
 // ===================== FILTER CONTROLS =====================
 
+// Pasang listener tombol filter tanggal di dashboard (apply, reset, quick range)
 function initFilterControls() {
   // Quick filter buttons
   document.querySelectorAll('.qbtn').forEach(btn => {
@@ -2624,7 +2664,6 @@ function initFilterControls() {
     document.getElementById('filterDateFrom').value = '';
     document.getElementById('filterDateTo').value   = '';
     App.data.filtered = getAllData();
-    documen
     App.data.filteredOutgoing = [...App.data.outgoing];
     App.data.filteredExpense  = [...App.data.expense];
     document.querySelectorAll('.qbtn').forEach(b => b.classList.remove('active'));
@@ -2635,6 +2674,7 @@ function initFilterControls() {
 
 // ===================== TRANSACTION SEARCH/FILTER =====================
 
+// Pasang listener semua kontrol di halaman transaksi (tab, search, filter, export)
 function initTransactionControls() {
   // Tab switch — Outgoing vs Expense
   document.querySelectorAll('.trx-tab-btn').forEach(btn => {
@@ -2678,6 +2718,7 @@ function initTransactionControls() {
 
 // ===================== DARK MODE =====================
 
+// Inisialisasi toggle dark/light mode dari navbar dan halaman Setting
 function initDarkMode() {
   const btn       = document.getElementById('darkmodeBtn');
   const icon      = document.getElementById('darkmodeIcon');
@@ -2700,7 +2741,7 @@ function initDarkMode() {
 
 // ===================== SETTINGS PERSISTENCE =====================
 
-const SETTINGS_KEY = 'btkch_dashboard_settings';
+const SETTINGS_KEY = 'btkch_dashboard_settings'; // Key localStorage untuk menyimpan pengaturan aplikasi
 
 /** Simpan semua settings ke localStorage */
 function saveSettings() {
@@ -2755,6 +2796,7 @@ function syncSettingsUI() {
 
 // ===================== SETTINGS PAGE =====================
 
+// Inisialisasi semua listener di halaman Setting (auto refresh, threshold, dll.)
 function initSettings() {
   // syncSettingsUI dipanggil di sini agar UI ter-update setelah DOM ready
   syncSettingsUI();
@@ -2769,7 +2811,7 @@ function initSettings() {
     if (e.target.checked) {
       startAutoRefresh();
     } else {
-      clearInterval(App.intervals.refresh);
+      clearInterval(App.intervals.refresh); // Hentikan interval refresh lama sebelum membuat yang baru
     }
   });
 
@@ -2849,6 +2891,7 @@ function initSettings() {
 
 // ===================== AUTO REFRESH =====================
 
+// Mulai interval auto refresh data CSV sesuai App.settings.refreshInterval
 function startAutoRefresh() {
   clearInterval(App.intervals.refresh);
   if (!App.settings.autoRefresh) return;
@@ -2913,6 +2956,7 @@ async function startApp() {
   }, 400);
 }
 
+// Entry point aplikasi: clear session lama, init login, tampilkan layar login
 async function init() {
   // Selalu tampilkan login screen — tidak ada auto-login dari session
   clearSession();
@@ -2921,4 +2965,4 @@ async function init() {
 }
 
 // ===================== BOOT =====================
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', init); // Jalankan init() saat DOM selesai dimuat browser

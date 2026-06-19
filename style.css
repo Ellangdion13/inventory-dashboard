@@ -6,36 +6,36 @@
 /* ===================== CSS VARIABLES ===================== */
 :root {
   /* Color Palette — Blue/Green/White Industrial */
-  --clr-bg:            #0a0f1e;
-  --clr-bg2:           #0d1426;
-  --clr-bg3:           #111827;
-  --clr-surface:       rgba(255,255,255,0.04);
-  --clr-surface2:      rgba(255,255,255,0.07);
-  --clr-border:        rgba(255,255,255,0.08);
-  --clr-border2:       rgba(255,255,255,0.12);
+  --clr-bg:            #0a0f1e; /* Warna latar belakang utama (biru sangat gelap) */
+  --clr-bg2:           #0d1426; /* Latar belakang alternatif sedikit lebih terang */
+  --clr-bg3:           #111827; /* Latar belakang tersier (untuk card/panel) */
+  --clr-surface:       rgba(255,255,255,0.04); /* Permukaan transparan sangat tipis (efek glass) */
+  --clr-surface2:      rgba(255,255,255,0.07); /* Permukaan transparan sedikit lebih terlihat */
+  --clr-border:        rgba(255,255,255,0.08); /* Border tipis untuk memisahkan elemen */
+  --clr-border2:       rgba(255,255,255,0.12); /* Border lebih tebal (hover/fokus) */
 
   /* Brand Colors */
-  --clr-blue:          #1e90ff;
-  --clr-blue-dark:     #0d6efd;
-  --clr-blue-glow:     rgba(30,144,255,0.35);
-  --clr-green:         #00e5a0;
+  --clr-blue:          #1e90ff; /* Biru utama brand */
+  --clr-blue-dark:     #0d6efd; /* Biru gelap untuk hover/aksen */
+  --clr-blue-glow:     rgba(30,144,255,0.35); /* Efek glow biru untuk bayangan */
+  --clr-green:         #00e5a0; /* Hijau utama brand (warna sukses/aman) */
   --clr-green-dark:    #00b87c;
   --clr-green-glow:    rgba(0,229,160,0.3);
-  --clr-cyan:          #00d4ff;
+  --clr-cyan:          #00d4ff; /* Cyan untuk aksen statistik */
   --clr-cyan-glow:     rgba(0,212,255,0.3);
-  --clr-purple:        #a855f7;
-  --clr-orange:        #f59e0b;
-  --clr-red:           #ef4444;
+  --clr-purple:        #a855f7; /* Ungu untuk aksen/kategori */
+  --clr-orange:        #f59e0b; /* Oranye untuk peringatan (low stock) */
+  --clr-red:           #ef4444; /* Merah untuk bahaya/kritis */
 
   /* Text */
-  --clr-text:          #e2e8f0;
-  --clr-text2:         #94a3b8;
-  --clr-text3:         #64748b;
+  --clr-text:          #e2e8f0; /* Warna teks utama (putih lembut) */
+  --clr-text2:         #94a3b8; /* Teks sekunder (abu-abu terang) */
+  --clr-text3:         #64748b; /* Teks tersier/placeholder (abu-abu gelap) */
 
   /* Sidebar */
-  --sidebar-width:     260px;
-  --sidebar-collapsed: 72px;
-  --topnav-h:          68px;
+  --sidebar-width:     260px; /* Lebar sidebar saat terbuka penuh */
+  --sidebar-collapsed: 72px; /* Lebar sidebar saat diciutkan (hanya ikon) */
+  --topnav-h:          68px; /* Tinggi navbar atas */
 
   /* Shadows & Glow */
   --shadow-card:       0 4px 24px rgba(0,0,0,0.4);
@@ -45,15 +45,16 @@
   --glow-green:        0 0 30px rgba(0,229,160,0.35), 0 0 60px rgba(0,229,160,0.12);
 
   /* Transitions */
-  --transition:        all 0.3s cubic-bezier(0.4,0,0.2,1);
-  --transition-fast:   all 0.15s ease;
+  --transition:        all 0.3s cubic-bezier(0.4,0,0.2,1); /* Transisi standar Material Design */
+  --transition-fast:   all 0.15s ease; /* Transisi cepat untuk feedback tombol */
 
   /* Gradient */
-  --grad-blue-green:   linear-gradient(135deg, #1e90ff 0%, #00e5a0 100%);
+  --grad-blue-green:   linear-gradient(135deg, #1e90ff 0%, #00e5a0 100%); /* Gradien brand biru ke hijau */
   --grad-dark:         linear-gradient(180deg, #0d1426 0%, #0a0f1e 100%);
 }
 
 /* Light Mode Overrides */
+/* ─── Light Mode: override variabel warna untuk tema terang ─── */
 body.light-mode {
   --clr-bg:            #f0f4f8;
   --clr-bg2:           #e8edf3;
@@ -70,9 +71,9 @@ body.light-mode {
 }
 
 /* ===================== BASE RESET ===================== */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; } /* Reset universal: padding/margin 0, border-box sizing */
 
-html { font-size: 16px; scroll-behavior: smooth; }
+html { font-size: 16px; scroll-behavior: smooth; } /* Font dasar 16px; scroll halus untuk anchor link */
 
 body {
   font-family: 'Inter', -apple-system, sans-serif;
@@ -87,9 +88,9 @@ body {
 }
 
 /* ===================== SCROLLBAR ===================== */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--clr-bg); }
-::-webkit-scrollbar-thumb { background: rgba(30,144,255,0.4); border-radius: 3px; }
+::-webkit-scrollbar { width: 6px; height: 6px; } /* Scrollbar tipis 6px untuk semua elemen */
+::-webkit-scrollbar-track { background: var(--clr-bg); } /* Track scrollbar ikut warna background */
+::-webkit-scrollbar-thumb { background: rgba(30,144,255,0.4); border-radius: 3px; } /* Thumb scrollbar warna biru transparan */
 ::-webkit-scrollbar-thumb:hover { background: rgba(30,144,255,0.7); }
 
 /* ===================== LOADING SCREEN ===================== */
@@ -107,7 +108,7 @@ body {
   transition: opacity 0.8s ease, visibility 0.8s ease;
 }
 
-.loading-screen.fade-out { opacity: 0; visibility: hidden; }
+.loading-screen.fade-out { opacity: 0; visibility: hidden; } /* Class yang ditambahkan JS saat loading selesai untuk fade out */
 
 .loading-content {
   text-align: center;
