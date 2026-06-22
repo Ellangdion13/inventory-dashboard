@@ -254,10 +254,25 @@ function initLogin() {
   document.getElementById('logoutBtn')?.addEventListener('click', () => { if (confirm('Yakin ingin logout?')) logout(); });
 }
 
-// ===================== CSV FILE PATHS =====================
-const CSV_OUTGOING   = './data/outgoing.csv';    // Path file CSV data keluar sparepart
-const CSV_EXPENSE    = './data/outgoingexpense.csv'; // Path file CSV data expense keluar
-const CSV_DATAMASTER = './data/datamaster.csv'; // Path file CSV data master stok
+// ===================== GOOGLE SHEETS DATA SOURCE =====================
+// Data dibaca langsung dari Google Sheets — tidak perlu CSV lokal / git push lagi.
+// Pastikan Spreadsheet di-share "Anyone with the link" (Viewer).
+const SPREADSHEET_ID = '1el2QFS_6yPop7BI_Gj58hecn1_vMmW8uBcGKbC13q0A';
+
+const SHEET_NAMES = {
+  outgoing:   'OUTGOING',
+  expense:    'OUTGOING EXPENSE',
+  datamaster: 'DATA MASTER',
+};
+
+// Build URL export CSV langsung dari Google Sheets (gviz endpoint, no auth needed)
+function sheetCSVUrl(sheetName) {
+  return `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+}
+
+const CSV_OUTGOING   = sheetCSVUrl(SHEET_NAMES.outgoing);   // Sheet OUTGOING
+const CSV_EXPENSE    = sheetCSVUrl(SHEET_NAMES.expense);    // Sheet OUTGOING EXPENSE
+const CSV_DATAMASTER = sheetCSVUrl(SHEET_NAMES.datamaster); // Sheet DATA MASTER
 
 // ===================== CHART.JS GLOBAL DEFAULTS =====================
 Chart.defaults.color = '#94a3b8'; // Warna teks default semua chart (abu-abu terang)
