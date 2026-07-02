@@ -11,6 +11,7 @@ const App = { // Objek utama penyimpan seluruh state aplikasi
     outgoing: [],         // Data CSV outgoing mentah hasil parse PapaParse
     expense: [],          // Data CSV expense mentah hasil parse PapaParse
     master: [],           // Data stok master dari datamaster.csv (kode, nama, lokasi, stok, UOM)
+    machineList: [],       // Daftar master mesin dari sheet MACHINE (nama + grup kategori)
     filtered: [],         // Gabungan outgoing+expense setelah difilter tanggal (untuk machine & analytic)
     filteredOutgoing: [], // Hanya outgoing setelah filter (untuk dashboard & transaction tab outgoing)
     filteredExpense: [],  // Hanya expense setelah filter (untuk transaction tab expense)
@@ -263,6 +264,7 @@ const SHEET_NAMES = {
   outgoing:   'OUTGOING',
   expense:    'OUTGOING EXPENSE',
   datamaster: 'DATA MASTER',
+  machine:    'MACHINE', // Sheet master daftar mesin + kategori grupnya (diisi otomatis oleh Apps Script)
 };
 
 // Build URL export CSV langsung dari Google Sheets (gviz endpoint, no auth needed)
@@ -273,6 +275,7 @@ function sheetCSVUrl(sheetName) {
 const CSV_OUTGOING   = sheetCSVUrl(SHEET_NAMES.outgoing);   // Sheet OUTGOING
 const CSV_EXPENSE    = sheetCSVUrl(SHEET_NAMES.expense);    // Sheet OUTGOING EXPENSE
 const CSV_DATAMASTER = sheetCSVUrl(SHEET_NAMES.datamaster); // Sheet DATA MASTER
+const CSV_MACHINE    = sheetCSVUrl(SHEET_NAMES.machine);    // Sheet MACHINE (master daftar mesin)
 
 // ===================== CHART.JS GLOBAL DEFAULTS =====================
 Chart.defaults.color = '#94a3b8'; // Warna teks default semua chart (abu-abu terang)
@@ -479,21 +482,29 @@ function startClock() {
 /** Load and parse both CSV files */
 async function loadAllData() {
   try {
-    const [outgoing, expense, master] = await Promise.all([
+    const [outgoing, expense, master, machineList] = await Promise.all([
       loadCSV(CSV_OUTGOING),
       loadCSV(CSV_EXPENSE),
       loadMasterCSV(CSV_DATAMASTER),
+      loadMachineListCSV(CSV_MACHINE),
     ]);
 
     App.data.outgoing = outgoing;
     App.data.expense  = expense;
     App.data.master   = master;
+    App.data.machineList = machineList;
+
+    // Gabungkan mesin dari sheet MACHINE ke MACHINE_GROUPS, lalu bangun ulang
+    // tombol filter grup mesin (halaman Machine) & sub-menu sidebar supaya
+    // mesin/grup baru yang ditambahkan di sheet langsung muncul di dashboard.
+    mergeMachineListIntoGroups(machineList);
+    rebuildMachineGroupUI();
 
     setDsStatus('dsOutgoingStatus', outgoing.length > 0);
     setDsStatus('dsExpenseStatus',  expense.length  > 0);
     setDsStatus('dsMasterStatus',   master.length   > 0);
 
-    console.log('Outgoing:', outgoing.length, '| Expense:', expense.length, '| Master:', master.length);
+    console.log('Outgoing:', outgoing.length, '| Expense:', expense.length, '| Master:', master.length, '| Machine list:', machineList.length);
 
     // ── Validasi dasar + deteksi anomali, lalu tampilkan status ke pengguna ──
     App.dataHealth.lastLoadOk = true;
@@ -664,7 +675,68 @@ function loadMasterCSV(path) {
 }
 
 
-// ===================== FIX: loadCSV — struktur Promise & callback diperbaiki =====================
+/** Load MACHINE master sheet — kolom: Machine Name (nama mesin), Group (kategori grup) */
+function loadMachineListCSV(path) {
+  return new Promise((resolve) => {
+    Papa.parse(path, {
+      download:       true,
+      header:         true,
+      skipEmptyLines: true,
+      delimiter:      ',',
+      complete: (results) => {
+        const rows = results.data
+          .map(row => {
+            const clean = {};
+            Object.keys(row).forEach(k => {
+              clean[k.replace(/^﻿/, '').replace(/[\r\n]+/g, ' ').trim()] =
+                (row[k] || '').toString().trim();
+            });
+            return clean;
+          })
+          .map(row => {
+            const findField = (...names) => {
+              const keys = Object.keys(row);
+              for (const name of names) {
+                const k = keys.find(kk => kk.toLowerCase() === name.toLowerCase());
+                if (k && row[k] !== '') return row[k];
+              }
+              return '';
+            };
+            return {
+              name:  findField('Machine Name', 'Nama Mesin', 'Mesin', 'Machine'),
+              group: findField('Group', 'Grup', 'Kategori', 'Category'),
+            };
+          })
+          .filter(row => row.name.trim() !== '');
+        console.log('MACHINE list loaded:', rows.length);
+        resolve(rows);
+      },
+      error: (err) => {
+        console.warn('MACHINE sheet error:', err);
+        resolve([]);
+      },
+    });
+  });
+}
+
+/**
+ * Gabungkan daftar mesin dari sheet MACHINE ke dalam MACHINE_GROUPS (runtime).
+ * Kalau grup di sheet belum ada di MACHINE_GROUPS, otomatis dibuat grup baru.
+ * Kalau kolom Group kosong / tidak dikenali, mesin masuk ke grup 'LAINNYA'.
+ */
+function mergeMachineListIntoGroups(machineList) {
+  machineList.forEach(({ name, group }) => {
+    if (!name) return;
+    const g = (group || 'LAINNYA').trim().toUpperCase() || 'LAINNYA';
+    if (!MACHINE_GROUPS[g]) MACHINE_GROUPS[g] = [];
+    const upper = name.trim().toUpperCase();
+    if (!MACHINE_GROUPS[g].some(m => m.toUpperCase() === upper)) {
+      MACHINE_GROUPS[g].push(name.trim());
+    }
+  });
+}
+
+
 /** Load a single CSV file using PapaParse */
 function loadCSV(path) {
   return new Promise((resolve) => {
@@ -1134,9 +1206,32 @@ const MACHINE_GROUPS = {
 
 let currentMachineGroup = 'ALL'; // Grup mesin yang sedang aktif di filter halaman Machine
 
-// Filter data berdasarkan grup mesin (ILAPAK, SIG, dll.) atau 'ALL' untuk semua
+// Cek apakah sebuah nama mesin cocok dengan salah satu grup yang sudah didefinisikan di MACHINE_GROUPS
+// (excludeGroup: nama grup yang dilewati saat pengecekan, dipakai untuk grup 'LAINNYA')
+function isMachineInDefinedGroups(machineName, excludeGroup) {
+  if (!machineName) return false;
+  const m = machineName.trim().toUpperCase();
+  return Object.keys(MACHINE_GROUPS).some(group => {
+    if (group === excludeGroup) return false;
+    const machines = MACHINE_GROUPS[group];
+    return machines.some(mg => m === mg.toUpperCase()) || m.startsWith(group.toUpperCase());
+  });
+}
+
+// Filter data berdasarkan grup mesin (ILAPAK, SIG, dll.), 'LAINNYA' untuk mesin yang belum terdaftar di grup manapun, atau 'ALL' untuk semua
 function filterByMachineGroup(data, group) {
   if (!group || group === 'ALL') return data;
+  if (group === 'LAINNYA') {
+    // Grup "Lainnya": mesin yang di-set eksplisit ke LAINNYA di sheet, ATAU
+    // mesin yang tidak cocok dengan grup manapun (belum dikategorikan sama sekali)
+    const explicit = MACHINE_GROUPS['LAINNYA'] || [];
+    return data.filter(r => {
+      if (!r.machine) return false;
+      const m = r.machine.trim().toUpperCase();
+      if (explicit.some(mg => m === mg.toUpperCase())) return true;
+      return !isMachineInDefinedGroups(r.machine, 'LAINNYA');
+    });
+  }
   const machines = MACHINE_GROUPS[group] || [];
   return data.filter(r => {
     if (!r.machine) return false;
@@ -1144,6 +1239,51 @@ function filterByMachineGroup(data, group) {
     return machines.some(mg => m === mg.toUpperCase()) || m.startsWith(group.toUpperCase());
   });
 }
+
+// Label tampilan yang lebih rapi untuk grup tertentu (selain itu pakai nama grup apa adanya)
+const MACHINE_GROUP_LABELS = {
+  'STORAGE TANK': 'Storage Tank',
+  'BOILER': 'Boiler',
+  'CHILLER': 'Chiller',
+  'KOMPRESOR': 'Kompresor',
+  'LAINNYA': 'Lainnya',
+};
+function machineGroupLabel(g) {
+  return MACHINE_GROUP_LABELS[g] || (g.charAt(0) + g.slice(1).toLowerCase());
+}
+
+/**
+ * Bangun ulang tombol filter grup mesin (halaman Machine) & sub-menu sidebar
+ * berdasarkan isi MACHINE_GROUPS saat ini (termasuk grup baru dari sheet MACHINE).
+ * Dipanggil setiap kali data selesai dimuat/direfresh.
+ */
+function rebuildMachineGroupUI() {
+  const groupKeys = Object.keys(MACHINE_GROUPS).filter(g => g !== 'LAINNYA');
+  groupKeys.push('LAINNYA'); // "Lainnya" selalu ditampilkan di posisi akhir, menampung mesin baru/tak dikenal
+
+  // --- Tombol filter di halaman Machine ---
+  const btnContainer = document.getElementById('machineGroupBtns');
+  if (btnContainer) {
+    const prevActive = currentMachineGroup;
+    btnContainer.innerHTML = `<button class="mgf-btn" data-group="ALL">Semua</button>` +
+      groupKeys.map(g => `<button class="mgf-btn" data-group="${g}">${machineGroupLabel(g)}</button>`).join('');
+    btnContainer.querySelectorAll('.mgf-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.group === prevActive);
+    });
+  }
+
+  // --- Sub-menu sidebar ---
+  const subGroup = document.getElementById('machineSubGroup');
+  if (subGroup) {
+    subGroup.innerHTML = groupKeys.map(g =>
+      `<a href="#" class="nav-sub-item" data-machine-group="${g}"><i class="bi bi-cpu"></i> ${machineGroupLabel(g)}</a>`
+    ).join('') + `<a href="#" class="nav-sub-item" data-machine-group="ALL"><i class="bi bi-grid-3x3-gap"></i> Semua Mesin</a>`;
+  }
+
+  // Pasang ulang event listener karena elemen tombol baru dibuat
+  initMachineGroupFilter();
+}
+
 
 // Pasang listener tombol filter grup mesin dan nav sub-item sidebar
 function initMachineGroupFilter() {
@@ -2383,7 +2523,9 @@ function populateFilterDropdowns(data, forceReset = false) {
   }
 
   if (mEl && mEl.options.length <= 1) {
-    const machines = [...new Set(data.map(r => r.machine).filter(Boolean))].sort();
+    const fromData = data.map(r => r.machine).filter(Boolean);
+    const fromSheet = (App.data.machineList || []).map(m => m.name).filter(Boolean);
+    const machines = [...new Set([...fromData, ...fromSheet])].sort();
     machines.forEach(m => {
       const opt = document.createElement('option');
       opt.value = m; opt.textContent = m;
