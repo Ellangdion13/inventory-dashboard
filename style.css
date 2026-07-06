@@ -984,6 +984,14 @@ body.light-mode input[type="date"] { color-scheme: light; }
   box-shadow: 0 0 15px rgba(30,144,255,0.3);
 }
 
+.trend-range-btn { padding: 5px 10px; font-size: 11px; }
+
+@media (max-width: 480px) {
+  #trendRangeBtns.quick-filter-btns { flex-wrap: wrap; justify-content: flex-end; }
+  .trend-range-btn { padding: 4px 8px; font-size: 10px; }
+}
+
+
 .btn-apply-filter:hover {
   transform: translateY(-1px);
   box-shadow: 0 0 25px rgba(30,144,255,0.5);
