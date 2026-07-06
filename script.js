@@ -52,6 +52,7 @@ const App = { // Objek utama penyimpan seluruh state aplikasi
     filterFrom: null,
     filterTo: null,
     currentTrxTab: 'outgoing', // 'outgoing' | 'expense'
+    trendRange: 7, // 3 | 7 | 30 | 'all' — untuk chart Trend Penggunaan Harian di dashboard
     // Badge "Stock Master" di sidebar: sengaja TIDAK disimpan ke localStorage,
     // supaya reload/refresh browser otomatis mengembalikan badge (sesuai keputusan:
     // hilang permanen setelah dibuka dalam sesi ini, tapi muncul lagi setelah reload).
@@ -957,9 +958,19 @@ function animateCounter(id, target) {
 
 // ===================== CHARTS — DASHBOARD =====================
 
-/** Trend Chart: Qty per day for last 7 days */
+/** Trend Chart: Qty per day, range dipilih via tombol (3 / 7 / 30 / Semua) */
 function renderTrendChart(data) {
-  const dates  = lastNDates(7);
+  const range = App.ui.trendRange;
+  let dates;
+
+  if (range === 'all') {
+    // Ambil semua tanggal unik yang ada di data, urut dari lama ke baru
+    dates = [...new Set(data.map(r => r.date).filter(Boolean))]
+      .sort((a, b) => parseDate(a) - parseDate(b));
+  } else {
+    dates = lastNDates(parseInt(range) || 7);
+  }
+
   const labels = dates.map(d => {
     const parts = d.split('/');
     return `${parts[0]}/${parts[1]}`;
@@ -2800,9 +2811,18 @@ function initNavItems() {
 
 // Pasang listener tombol filter tanggal di dashboard (apply, reset, quick range)
 function initFilterControls() {
-  // Quick filter buttons
-  document.querySelectorAll('.qbtn').forEach(btn => {
+  // Quick filter buttons (rentang tanggal dashboard: Today/Week/Month/All)
+  document.querySelectorAll('.qbtn:not(.trend-range-btn)').forEach(btn => {
     btn.addEventListener('click', () => setQuickRange(btn.dataset.range));
+  });
+
+  // Trend chart range buttons (3 / 7 / 30 / Semua) — khusus chart Trend Penggunaan Harian
+  document.querySelectorAll('.trend-range-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      App.ui.trendRange = btn.dataset.trendRange === 'all' ? 'all' : parseInt(btn.dataset.trendRange);
+      document.querySelectorAll('.trend-range-btn').forEach(b => b.classList.toggle('active', b === btn));
+      renderTrendChart(App.data.filteredOutgoing);
+    });
   });
 
   // Apply filter button
