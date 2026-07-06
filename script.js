@@ -80,7 +80,7 @@ const App = { // Objek utama penyimpan seluruh state aplikasi
 const AUTH_KEY = 'btkch_auth_session'; // Key localStorage untuk menyimpan sesi login
 
 const USERS = [
-  { username: 'admin',    password: 'admin123',  role: 'admin', name: 'Admin Sparepart', dept: 'Sparepart' },
+  { username: 'Widyan',    password: 'Alfarabiku@12',  role: 'admin', name: 'Widyan', dept: 'Sparepart' },
   { username: 'user',      password: 'user123',    role: 'user',  name: 'USER',             dept: 'General' },
 ];
 
