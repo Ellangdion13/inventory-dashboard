@@ -420,7 +420,12 @@
                 <i class="bi bi-graph-up-arrow"></i>
                 Trend Penggunaan Harian
               </div>
-              <div class="chart-badge">7 Hari Terakhir</div>
+              <div class="quick-filter-btns" id="trendRangeBtns">
+                <button class="qbtn trend-range-btn" data-trend-range="3">3 Hari</button>
+                <button class="qbtn trend-range-btn active" data-trend-range="7">7 Hari</button>
+                <button class="qbtn trend-range-btn" data-trend-range="30">30 Hari</button>
+                <button class="qbtn trend-range-btn" data-trend-range="all">Semua</button>
+              </div>
             </div>
             <div class="chart-body">
               <canvas id="trendChart" height="120"></canvas>
