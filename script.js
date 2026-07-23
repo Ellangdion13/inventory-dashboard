@@ -262,9 +262,9 @@ function initLogin() {
 const SPREADSHEET_ID = '1el2QFS_6yPop7BI_Gj58hecn1_vMmW8uBcGKbC13q0A';
 
 const SHEET_NAMES = {
-  outgoing:   'OUTGOING',
-  expense:    'OUTGOING EXPENSE',
-  datamaster: 'DATA MASTER',
+  outgoing:   'OUTGOINGEDIT',
+  expense:    'OUTGOINGEXPENSEEDIT',
+  datamaster: 'DATAMASTEREDIT',
   machine:    'MACHINE', // Sheet master daftar mesin + kategori grupnya (diisi otomatis oleh Apps Script)
 };
 
